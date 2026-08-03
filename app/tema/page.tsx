@@ -42,7 +42,7 @@ export default function TemaPage() {
     if (data) setJadwalList(data)
   }
 
-  async function handleTambahTema(e) {
+  async function handleTambahTema(e: any) {
     e.preventDefault()
     if (!tanggalSabtu || !tema || !tujuan) {
       alert('Semua field harus diisi!')
