@@ -302,7 +302,7 @@ export default function RosterPage() {
         {/* List Roster */}
         {filteredRoster.length > 0 ? (
           <div className="rounded-lg overflow-hidden divide-y" style={{ border: '1px solid rgba(212,175,55,.25)' }}>
-            {filteredRoster.map((item) => (
+            {filteredRoster.map((item: any) => (
               <div
                 key={item.id}
                 className="table-row p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
