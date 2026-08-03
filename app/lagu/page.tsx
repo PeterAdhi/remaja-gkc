@@ -23,9 +23,9 @@ export default function LaguPage() {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [])
 
-  const filteredLaguList = laguList.filter((l: any) =>
-    l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
-  )
+const filteredLaguList = laguList.filter((l: any) =>
+  l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
+)
 
   async function fetchLagu() {
     const { data } = await supabase.from('lagu').select('*').order('judul_lagu', { ascending: true })
