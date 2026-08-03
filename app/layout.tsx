@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: '/remaja', label: 'Pendataan Remaja', icon: '✦' },
 ]
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [showModal, setShowModal] = useState(false)
