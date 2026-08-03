@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function RemajaPage() {
   const [formData, setFormData] = useState({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
-  const [remajaList, setRemajaList] = useState([])
+  const [remajaList, setRemajaList] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loadingRemaja, setLoadingRemaja] = useState(false)
 
