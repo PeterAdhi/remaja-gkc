@@ -23,7 +23,7 @@ export default function LaguPage() {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [])
 
-  const filteredLaguList = laguList.filter((l: any) =>   
+  const filteredLaguList = laguList.filter((l: any) =>
     l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
   )
 
