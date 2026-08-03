@@ -114,7 +114,7 @@ export default function RosterPage() {
     }
   }
 
-  const filteredRoster = rosterList.filter((item) => {
+  const filteredRoster = rosterList.filter((item: any) => {
     const q = searchTerm.toLowerCase()
     return (
       item.tanggal_sabtu?.toLowerCase().includes(q) ||
