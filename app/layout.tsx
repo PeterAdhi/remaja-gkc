@@ -147,7 +147,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               {/* Hamburger (mobile & tablet) */}
               <button
-                onClick={() => setMenuOpen((v) => !v)}
+                onClick={() => setMenuOpen((v: any) => !v)}
                 className="lg:hidden w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-lg border border-amber-200/30 hover:bg-white/5 transition"
                 aria-label="Buka menu"
               >
