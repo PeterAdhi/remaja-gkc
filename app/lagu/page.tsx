@@ -9,6 +9,7 @@ export default function LaguPage() {
   const [pilihanForm, setPilihanForm] = useState({ lagu_id: '', tanggal_ibadah: '' })
   const [searchLagu, setSearchLagu] = useState('')
   const [selectedLagu, setSelectedLagu] = useState(null)
+  const [laguList, setLaguList] = useState<any[]>([])
 
   useEffect(() => {
     fetchLagu()
