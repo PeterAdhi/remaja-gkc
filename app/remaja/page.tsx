@@ -17,7 +17,7 @@ export default function RemajaPage() {
     if (data) setRemajaList(data)
   }
 
-  async function handleSubmitRemaja(e) {
+  async function handleSubmitRemaja(e: any) {
     e.preventDefault()
     setLoadingRemaja(true)
     const { error } = await supabase.from('remaja').insert([formData])
