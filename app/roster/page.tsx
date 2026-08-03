@@ -3,19 +3,19 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function RosterPage() {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [rosterList, setRosterList] = useState([])
-  const [tanggalSabtu, setTanggalSabtu] = useState('')
+  const [isAdmin, setIsAdmin] = useState<any>(false)
+  const [rosterList, setRosterList] = useState<any>([])
+  const [tanggalSabtu, setTanggalSabtu] = useState<any>('')
 
-  const [liturgos, setLiturgos] = useState('')
-  const [usherKolektan, setUsherKolektan] = useState('')
-  const [doaSyafaat, setDoaSyafaat] = useState('')
-  const [warta, setWarta] = useState('')
-  const [multimedia, setMultimedia] = useState('')
-  const [pendamping, setPendamping] = useState('')
-  const [timMusik, setTimMusik] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [liturgos, setLiturgos] = useState<any>('')
+  const [usherKolektan, setUsherKolektan] = useState<any>('')
+  const [doaSyafaat, setDoaSyafaat] = useState<any>('')
+  const [warta, setWarta] = useState<any>('')
+  const [multimedia, setMultimedia] = useState<any>('')
+  const [pendamping, setPendamping] = useState<any>('')
+  const [timMusik, setTimMusik] = useState<any>('')
+  const [loading, setLoading] = useState<any>(false)
+  const [searchTerm, setSearchTerm] = useState<any>('')
 
   useEffect(() => {
     const checkAdmin = () => {

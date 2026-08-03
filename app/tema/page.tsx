@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function TemaPage() {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [jadwalList, setJadwalList] = useState([])
-  const [tanggalSabtu, setTanggalSabtu] = useState('')
-  const [tema, setTema] = useState('')
-  const [tujuan, setTujuan] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [isAdmin, setIsAdmin] = useState<any>(false)
+  const [jadwalList, setJadwalList] = useState<any>([])
+  const [tanggalSabtu, setTanggalSabtu] = useState<any>('')
+  const [tema, setTema] = useState<any>('')
+  const [tujuan, setTujuan] = useState<any>('')
+  const [loading, setLoading] = useState<any>(false)
+  const [searchTerm, setSearchTerm] = useState<any>('')
 
   // Cek status admin dari localStorage saat halaman dimuat
   useEffect(() => {

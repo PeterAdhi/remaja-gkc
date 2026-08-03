@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function RemajaPage() {
-  const [formData, setFormData] = useState({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
+  const [formData, setFormData] = useState<any>({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
   const [remajaList, setRemajaList] = useState<any[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [loadingRemaja, setLoadingRemaja] = useState(false)
+  const [searchTerm, setSearchTerm] = useState<any>('')
+  const [loadingRemaja, setLoadingRemaja] = useState<any>(false)
 
   useEffect(() => {
     fetchRemaja()

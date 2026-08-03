@@ -12,10 +12,10 @@ const NAV_ITEMS = [
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [adminPassword, setAdminPassword] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState<any>(false)
+  const [adminPassword, setAdminPassword] = useState<any>('')
+  const [showModal, setShowModal] = useState<any>(false)
+  const [menuOpen, setMenuOpen] = useState<any>(false)
 
   // Cek status login dari localStorage saat pertama kali halaman dimuat
   useEffect(() => {

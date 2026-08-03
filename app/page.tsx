@@ -5,12 +5,12 @@ import { supabase } from '@/lib/supabase'
 export default function DashboardPage() {
   const [remajaList, setRemajaList] = useState<any[]>([])
   const [jadwalTemaList, setJadwalTemaList] = useState<any>([])
-  const [nextRoster, setNextRoster] = useState(null)
-  const [loadingRoster, setLoadingRoster] = useState(true)
+  const [nextRoster, setNextRoster] = useState<any>(null)
+  const [loadingRoster, setLoadingRoster] = useState<any>(true)
 
   // State untuk Countdown
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-  const [isIbadahTime, setIsIbadahTime] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<any>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [isIbadahTime, setIsIbadahTime] = useState<any>(false)
 
   useEffect(() => {
     fetchRemaja()
