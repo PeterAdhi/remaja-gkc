@@ -1,14 +1,30 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent, ChangeEvent, KeyboardEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface Lagu {
+  id: string | number
+  judul_lagu: string
+  lirik: string
+}
+
+interface NewLaguState {
+  judul_lagu: string
+  lirik: string
+}
+
+interface PilihanFormState {
+  lagu_id: string | number
+  tanggal_ibadah: string
+}
+
 export default function LaguPage() {
-  const [laguList, setLaguList] = useState<any[]>([])
-  const [newLagu, setNewLagu] = useState<any>({ judul_lagu: '', lirik: '' })
-  const [loadingLagu, setLoadingLagu] = useState<any>(false)
-  const [pilihanForm, setPilihanForm] = useState<any>({ lagu_id: '', tanggal_ibadah: '' })
-  const [searchLagu, setSearchLagu] = useState<any>('')
-  const [selectedLagu, setSelectedLagu] = useState<any>(null)
+  const [laguList, setLaguList] = useState<Lagu[]>([])
+  const [newLagu, setNewLagu] = useState<NewLaguState>({ judul_lagu: '', lirik: '' })
+  const [loadingLagu, setLoadingLagu] = useState<boolean>(false)
+  const [pilihanForm, setPilihanForm] = useState<PilihanFormState>({ lagu_id: '', tanggal_ibadah: '' })
+  const [searchLagu, setSearchLagu] = useState<string>('')
+  const [selectedLagu, setSelectedLagu] = useState<Lagu | null>(null)
 
   useEffect(() => {
     fetchLagu()
@@ -16,36 +32,50 @@ export default function LaguPage() {
 
   // Tutup pop up dengan tombol Escape
   useEffect(() => {
-    function handleEsc(e: any) {
+    function handleEsc(e: KeyboardEvent | any) {
       if (e.key === 'Escape') setSelectedLagu(null)
     }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
+    window.addEventListener('keydown', handleEsc as EventListener)
+    return () => window.removeEventListener('keydown', handleEsc as EventListener)
   }, [])
 
-  const filteredLaguList = laguList.filter((l: any) =>
+  const filteredLaguList = laguList.filter((l: Lagu) =>
     l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
   )
 
   async function fetchLagu() {
-    const { data } = await supabase.from('lagu').select('*').order('judul_lagu', { ascending: true })
-    if (data) setLaguList(data)
+    try {
+      const { data, error } = await supabase.from('lagu').select('*').order('judul_lagu', { ascending: true })
+      if (error) {
+        console.error('Error fetching lagu:', error.message)
+      } else if (data) {
+        setLaguList(data)
+      }
+    } catch (err: unknown) {
+      console.error('Terjadi kesalahan saat mengambil data lagu:', err)
+    }
   }
 
-  async function handleTambahLagu(e: any) {
+  async function handleTambahLagu(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoadingLagu(true)
-    const { error } = await supabase.from('lagu').insert([newLagu])
-    if (error) alert('Gagal: ' + error.message)
-    else {
-      alert('Lagu berhasil ditambahkan!')
-      setNewLagu({ judul_lagu: '', lirik: '' })
-      fetchLagu()
+    try {
+      const { error } = await supabase.from('lagu').insert([newLagu])
+      if (error) {
+        alert('Gagal: ' + error.message)
+      } else {
+        alert('Lagu berhasil ditambahkan!')
+        setNewLagu({ judul_lagu: '', lirik: '' })
+        fetchLagu()
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
+    } finally {
+      setLoadingLagu(false)
     }
-    setLoadingLagu(false)
   }
 
-  async function handlePilihLagu(e: any) {
+  async function handlePilihLagu(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const { lagu_id, tanggal_ibadah } = pilihanForm
     const tanggalDipilih = new Date(tanggal_ibadah)
@@ -53,22 +83,27 @@ export default function LaguPage() {
     satuMingguLalu.setDate(tanggalDipilih.getDate() - 7)
     const formatSatuMingguLalu = satuMingguLalu.toISOString().split('T')[0]
 
-    const { data: riwayatSatuMinggu } = await supabase
-      .from('pemilihan_lagu')
-      .select('*')
-      .eq('lagu_id', lagu_id)
-      .eq('tanggal_ibadah', formatSatuMingguLalu)
+    try {
+      const { data: riwayatSatuMinggu } = await supabase
+        .from('pemilihan_lagu')
+        .select('*')
+        .eq('lagu_id', lagu_id)
+        .eq('tanggal_ibadah', formatSatuMingguLalu)
 
-    if (riwayatSatuMinggu && riwayatSatuMinggu.length > 0) {
-      alert('⚠️ PERINGATAN: Lagu ini sudah dinyanyikan minggu lalu (' + formatSatuMingguLalu + ') dan baru bisa dipilih kembali minggu depannya!')
-      return
-    }
+      if (riwayatSatuMinggu && riwayatSatuMinggu.length > 0) {
+        alert('⚠️ PERINGATAN: Lagu ini sudah dinyanyikan minggu lalu (' + formatSatuMingguLalu + ') dan baru bisa dipilih kembali minggu depannya!')
+        return
+      }
 
-    const { error } = await supabase.from('pemilihan_lagu').insert([{ lagu_id, tanggal_ibadah }])
-    if (error) alert('Gagal: ' + error.message)
-    else {
-      alert('Berhasil menjadwalkan lagu untuk tanggal ' + tanggal_ibadah)
-      setPilihanForm({ lagu_id: '', tanggal_ibadah: '' })
+      const { error } = await supabase.from('pemilihan_lagu').insert([{ lagu_id, tanggal_ibadah }])
+      if (error) {
+        alert('Gagal: ' + error.message)
+      } else {
+        alert('Berhasil menjadwalkan lagu untuk tanggal ' + tanggal_ibadah)
+        setPilihanForm({ lagu_id: '', tanggal_ibadah: '' })
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
     }
   }
 
@@ -117,7 +152,7 @@ export default function LaguPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={newLagu.judul_lagu}
-              onChange={(e) => setNewLagu({ ...newLagu, judul_lagu: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setNewLagu({ ...newLagu, judul_lagu: e.target.value })}
             />
             <textarea
               rows={4}
@@ -125,7 +160,7 @@ export default function LaguPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={newLagu.lirik}
-              onChange={(e) => setNewLagu({ ...newLagu, lirik: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewLagu({ ...newLagu, lirik: e.target.value })}
             />
             <button
               type="submit"
@@ -157,10 +192,10 @@ export default function LaguPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold-dark"
               value={pilihanForm.lagu_id}
-              onChange={(e) => setPilihanForm({ ...pilihanForm, lagu_id: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setPilihanForm({ ...pilihanForm, lagu_id: e.target.value })}
             >
               <option value="">-- Pilih Lagu --</option>
-              {laguList.map((l: any) => (
+              {laguList.map((l: Lagu) => (
                 <option key={l.id} value={l.id}>{l.judul_lagu}</option>
               ))}
             </select>
@@ -169,7 +204,7 @@ export default function LaguPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold-dark"
               value={pilihanForm.tanggal_ibadah}
-              onChange={(e) => setPilihanForm({ ...pilihanForm, tanggal_ibadah: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setPilihanForm({ ...pilihanForm, tanggal_ibadah: e.target.value })}
             />
             <button
               type="submit"
@@ -209,7 +244,7 @@ export default function LaguPage() {
             placeholder="Cari judul lagu..."
             className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
             value={searchLagu}
-            onChange={(e) => setSearchLagu(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchLagu(e.target.value)}
           />
           {searchLagu && (
             <button
@@ -224,7 +259,7 @@ export default function LaguPage() {
 
         {filteredLaguList.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-            {filteredLaguList.map((l: any) => (
+            {filteredLaguList.map((l: Lagu) => (
               <button
                 key={l.id}
                 onClick={() => setSelectedLagu(l)}

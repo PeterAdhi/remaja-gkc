@@ -1,36 +1,70 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface Remaja {
+  id: string | number
+  nama_lengkap: string
+  alamat: string
+  asal_sekolah: string
+  tanggal_lahir: string
+}
+
+interface FormDataState {
+  nama_lengkap: string
+  alamat: string
+  asal_sekolah: string
+  tanggal_lahir: string
+}
+
 export default function RemajaPage() {
-  const [formData, setFormData] = useState<any>({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
-  const [remajaList, setRemajaList] = useState<any[]>([])
-  const [searchTerm, setSearchTerm] = useState<any>('')
-  const [loadingRemaja, setLoadingRemaja] = useState<any>(false)
+  const [formData, setFormData] = useState<FormDataState>({
+    nama_lengkap: '',
+    alamat: '',
+    asal_sekolah: '',
+    tanggal_lahir: ''
+  })
+  const [remajaList, setRemajaList] = useState<Remaja[]>([])
+  const [searchTerm, setSearchTerm] = useState<string>('')
+  const [loadingRemaja, setLoadingRemaja] = useState<boolean>(false)
 
   useEffect(() => {
     fetchRemaja()
   }, [])
 
   async function fetchRemaja() {
-    const { data } = await supabase.from('remaja').select('*').order('id', { ascending: false })
-    if (data) setRemajaList(data)
+    try {
+      const { data, error } = await supabase.from('remaja').select('*').order('id', { ascending: false })
+      if (error) {
+        console.error('Error fetching remaja:', error.message)
+      } else if (data) {
+        setRemajaList(data)
+      }
+    } catch (err: unknown) {
+      console.error('Terjadi kesalahan saat mengambil data remaja:', err)
+    }
   }
 
-  async function handleSubmitRemaja(e: any) {
+  async function handleSubmitRemaja(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoadingRemaja(true)
-    const { error } = await supabase.from('remaja').insert([formData])
-    if (error) alert('Gagal: ' + error.message)
-    else {
-      alert('Data diri berhasil disimpan!')
-      setFormData({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
-      fetchRemaja()
+    try {
+      const { error } = await supabase.from('remaja').insert([formData])
+      if (error) {
+        alert('Gagal: ' + error.message)
+      } else {
+        alert('Data diri berhasil disimpan!')
+        setFormData({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
+        fetchRemaja()
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
+    } finally {
+      setLoadingRemaja(false)
     }
-    setLoadingRemaja(false)
   }
 
-  const filteredRemaja = remajaList.filter((item) =>
+  const filteredRemaja = remajaList.filter((item: Remaja) =>
     item.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -79,7 +113,7 @@ export default function RemajaPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={formData.nama_lengkap}
-              onChange={(e) => setFormData({ ...formData, nama_lengkap: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nama_lengkap: e.target.value })}
             />
             <textarea
               rows={3}
@@ -87,7 +121,7 @@ export default function RemajaPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={formData.alamat}
-              onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, alamat: e.target.value })}
             />
             <input
               type="text"
@@ -95,14 +129,14 @@ export default function RemajaPage() {
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={formData.asal_sekolah}
-              onChange={(e) => setFormData({ ...formData, asal_sekolah: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, asal_sekolah: e.target.value })}
             />
             <input
               type="date"
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
               value={formData.tanggal_lahir}
-              onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
             />
             <button
               type="submit"
@@ -141,7 +175,7 @@ export default function RemajaPage() {
               placeholder="Cari nama remaja..."
               className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             />
             {searchTerm && (
               <button
@@ -167,7 +201,7 @@ export default function RemajaPage() {
               </thead>
               <tbody>
                 {filteredRemaja.length > 0 ? (
-                  filteredRemaja.map((item) => (
+                  filteredRemaja.map((item: Remaja) => (
                     <tr key={item.id} className="table-row">
                       <td className="p-3 font-semibold text-gray-800">{item.nama_lengkap}</td>
                       <td className="p-3 text-gray-600">{item.alamat}</td>

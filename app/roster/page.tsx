@@ -1,28 +1,28 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function RosterPage() {
-  const [isAdmin, setIsAdmin] = useState<any>(false)
-  const [rosterList, setRosterList] = useState<any>([])
-  const [tanggalSabtu, setTanggalSabtu] = useState<any>('')
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [rosterList, setRosterList] = useState<any[]>([])
+  const [tanggalSabtu, setTanggalSabtu] = useState<string>('')
 
-  const [liturgos, setLiturgos] = useState<any>('')
-  const [usherKolektan, setUsherKolektan] = useState<any>('')
-  const [doaSyafaat, setDoaSyafaat] = useState<any>('')
-  const [warta, setWarta] = useState<any>('')
-  const [multimedia, setMultimedia] = useState<any>('')
-  const [pendamping, setPendamping] = useState<any>('')
-  const [timMusik, setTimMusik] = useState<any>('')
-  const [loading, setLoading] = useState<any>(false)
-  const [searchTerm, setSearchTerm] = useState<any>('')
+  const [liturgos, setLiturgos] = useState<string>('')
+  const [usherKolektan, setUsherKolektan] = useState<string>('')
+  const [doaSyafaat, setDoaSyafaat] = useState<string>('')
+  const [warta, setWarta] = useState<string>('')
+  const [multimedia, setMultimedia] = useState<string>('')
+  const [pendamping, setPendamping] = useState<string>('')
+  const [timMusik, setTimMusik] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [searchTerm, setSearchTerm] = useState<string>('')
 
   useEffect(() => {
     const checkAdmin = () => {
       try {
         const status = localStorage.getItem('isAdminRemaja')
         setIsAdmin(status === 'true')
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Gagal membaca localStorage:', err)
       }
     }
@@ -51,12 +51,12 @@ export default function RosterPage() {
       } else if (data) {
         setRosterList(data)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Terjadi kesalahan saat mengambil data:', err)
     }
   }
 
-  async function handleTambahRoster(e: any) {
+  async function handleTambahRoster(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!tanggalSabtu) {
       alert('Tanggal Sabtu harus diisi!')
@@ -93,13 +93,13 @@ export default function RosterPage() {
         fetchRoster()
       }
     } catch (err: any) {
-      alert('Terjadi kesalahan sistem: ' + err.message)
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDelete(id: any) {
+  async function handleDelete(id: string | number) {
     if (!confirm('Yakin ingin menghapus roster ini?')) return
 
     try {
@@ -110,7 +110,7 @@ export default function RosterPage() {
         fetchRoster()
       }
     } catch (err: any) {
-      alert('Terjadi kesalahan sistem: ' + err.message)
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
     }
   }
 
@@ -172,7 +172,7 @@ export default function RosterPage() {
                   type="date"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={tanggalSabtu}
-                  onChange={(e) => setTanggalSabtu(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTanggalSabtu(e.target.value)}
                 />
               </div>
               <div>
@@ -182,7 +182,7 @@ export default function RosterPage() {
                   placeholder="Nama Liturgos"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={liturgos}
-                  onChange={(e) => setLiturgos(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setLiturgos(e.target.value)}
                 />
               </div>
               <div>
@@ -192,7 +192,7 @@ export default function RosterPage() {
                   placeholder="Nama Usher & Kolektan"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={usherKolektan}
-                  onChange={(e) => setUsherKolektan(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setUsherKolektan(e.target.value)}
                 />
               </div>
               <div>
@@ -202,7 +202,7 @@ export default function RosterPage() {
                   placeholder="Nama Petugas Doa Syafaat"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={doaSyafaat}
-                  onChange={(e) => setDoaSyafaat(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setDoaSyafaat(e.target.value)}
                 />
               </div>
               <div>
@@ -212,7 +212,7 @@ export default function RosterPage() {
                   placeholder="Nama Petugas Warta"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={warta}
-                  onChange={(e) => setWarta(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setWarta(e.target.value)}
                 />
               </div>
               <div>
@@ -222,7 +222,7 @@ export default function RosterPage() {
                   placeholder="Nama Petugas Multimedia"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={multimedia}
-                  onChange={(e) => setMultimedia(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setMultimedia(e.target.value)}
                 />
               </div>
               <div>
@@ -232,7 +232,7 @@ export default function RosterPage() {
                   placeholder="Nama Pendamping"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={pendamping}
-                  onChange={(e) => setPendamping(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setPendamping(e.target.value)}
                 />
               </div>
               <div>
@@ -242,7 +242,7 @@ export default function RosterPage() {
                   placeholder="Nama Anggota Tim Musik"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={timMusik}
-                  onChange={(e) => setTimMusik(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTimMusik(e.target.value)}
                 />
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function RosterPage() {
             placeholder="Cari tanggal atau nama petugas..."
             className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
             <button

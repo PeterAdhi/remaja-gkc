@@ -144,7 +144,7 @@ export default function TemaPage() {
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Tujuan / Poin Firman</label>
                 <textarea
-                  rows="3"
+                  rows={3}
                   placeholder="Contoh: Remaja belajar taat..."
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
                   value={tujuan}
@@ -205,7 +205,7 @@ export default function TemaPage() {
           {/* List Jadwal */}
           {filteredJadwal.length > 0 ? (
             <div className="rounded-lg overflow-hidden divide-y" style={{ border: '1px solid rgba(212,175,55,.25)', borderColor: 'rgba(212,175,55,.25)' }}>
-              {filteredJadwal.map((item) => (
+              {filteredJadwal.map((item: any) => (
                 <div
                   key={item.id}
                   className="table-row p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"

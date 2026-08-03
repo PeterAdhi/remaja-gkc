@@ -1,8 +1,14 @@
 'use client'
 import './globals.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string
+  label: string
+  icon: string
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: '✦' },
   { href: '/tema', label: 'Jadwal Tema', icon: '✦' },
   { href: '/roster', label: 'Roster Pelayanan', icon: '✦' },
@@ -12,10 +18,10 @@ const NAV_ITEMS = [
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState<any>(false)
-  const [adminPassword, setAdminPassword] = useState<any>('')
-  const [showModal, setShowModal] = useState<any>(false)
-  const [menuOpen, setMenuOpen] = useState<any>(false)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [adminPassword, setAdminPassword] = useState<string>('')
+  const [showModal, setShowModal] = useState<boolean>(false)
+  const [menuOpen, setMenuOpen] = useState<boolean>(false)
 
   // Cek status login dari localStorage saat pertama kali halaman dimuat
   useEffect(() => {
@@ -25,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
   }, [])
 
-  function handleLoginAdmin(e: any) {
+  function handleLoginAdmin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (adminPassword === 'adminremaja123') {
       setIsAdmin(true)
@@ -111,7 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             {/* Menu Navigasi — Desktop */}
             <div className="hidden lg:flex items-center gap-1 text-xs font-medium">
-              {NAV_ITEMS.map((item) => (
+              {NAV_ITEMS.map((item: NavItem) => (
                 <a
                   key={item.href}
                   href={item.href}
@@ -147,7 +153,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               {/* Hamburger (mobile & tablet) */}
               <button
-                onClick={() => setMenuOpen((v: any) => !v)}
+                onClick={() => setMenuOpen((v: boolean) => !v)}
                 className="lg:hidden w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-lg border border-amber-200/30 hover:bg-white/5 transition"
                 aria-label="Buka menu"
               >
@@ -161,7 +167,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Drawer Mobile */}
           <div className={`lg:hidden drawer ${menuOpen ? 'drawer-open' : ''}`}>
             <div className="px-5 pb-4 pt-1 flex flex-col gap-1">
-              {NAV_ITEMS.map((item) => (
+              {NAV_ITEMS.map((item: NavItem) => (
                 <a
                   key={item.href}
                   href={item.href}

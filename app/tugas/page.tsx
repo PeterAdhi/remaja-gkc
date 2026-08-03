@@ -1,7 +1,13 @@
 'use client'
 
+interface DivisiItem {
+  icon: string
+  title: string
+  desc: string
+}
+
 export default function TugasPage() {
-  const divisiList = [
+  const divisiList: DivisiItem[] = [
     {
       icon: '📜',
       title: 'Liturgos',
@@ -58,7 +64,7 @@ export default function TugasPage() {
 
       {/* Grid Divisi */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {divisiList.map((item, i) => (
+        {divisiList.map((item: DivisiItem, i: number) => (
           <div
             key={item.title}
             className={`reveal delay-${(i % 5) + 1} tilt-card petugas-box p-5 rounded-2xl space-y-2`}

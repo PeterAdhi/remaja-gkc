@@ -2,15 +2,46 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface RemajaItem {
+  id: number | string
+  nama_lengkap: string
+  tanggal_lahir?: string
+}
+
+interface JadwalTemaItem {
+  id: number | string
+  tanggal_sabtu: string
+  tema: string
+  tujuan: string
+}
+
+interface RosterItem {
+  tanggal_sabtu: string
+  liturgos?: string
+  usher_kolektan?: string
+  doa_syafaat?: string
+  warta?: string
+  multimedia?: string
+  pendamping?: string
+  tim_musik?: string
+}
+
+interface TimeLeft {
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+}
+
 export default function DashboardPage() {
-  const [remajaList, setRemajaList] = useState<any[]>([])
-  const [jadwalTemaList, setJadwalTemaList] = useState<any>([])
-  const [nextRoster, setNextRoster] = useState<any>(null)
-  const [loadingRoster, setLoadingRoster] = useState<any>(true)
+  const [remajaList, setRemajaList] = useState<RemajaItem[]>([])
+  const [jadwalTemaList, setJadwalTemaList] = useState<JadwalTemaItem[]>([])
+  const [nextRoster, setNextRoster] = useState<RosterItem | null>(null)
+  const [loadingRoster, setLoadingRoster] = useState<boolean>(true)
 
   // State untuk Countdown
-  const [timeLeft, setTimeLeft] = useState<any>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-  const [isIbadahTime, setIsIbadahTime] = useState<any>(false)
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [isIbadahTime, setIsIbadahTime] = useState<boolean>(false)
 
   useEffect(() => {
     fetchRemaja()
@@ -71,11 +102,11 @@ export default function DashboardPage() {
 
   async function fetchNextRoster() {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const todayStr = new Date().toISOString().split('T')[0]
       const { data, error } = await supabase
         .from('roster_penatalayanan')
         .select('*')
-        .gte('tanggal_sabtu', today)
+        .gte('tanggal_sabtu', todayStr)
         .order('tanggal_sabtu', { ascending: true })
         .limit(1)
 
@@ -98,14 +129,14 @@ export default function DashboardPage() {
   const targetSaturday = new Date(today)
   targetSaturday.setDate(today.getDate() + distanceToSaturday)
   const formatTargetSabtu = targetSaturday.toISOString().split('T')[0]
-  const temaSabtuIni = jadwalTemaList.find((item: any) => item.tanggal_sabtu === formatTargetSabtu)
+  const temaSabtuIni = jadwalTemaList.find((item: JadwalTemaItem) => item.tanggal_sabtu === formatTargetSabtu)
 
   // Notifikasi Ulang Tahun Bulan Ini
   const currentMonthIndex = new Date().getMonth() + 1
   const namaBulanList = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
   const namaBulanAktif = namaBulanList[currentMonthIndex]
 
-  const ulgTahunBulanIni = remajaList.filter((item) => {
+  const ulgTahunBulanIni = remajaList.filter((item: RemajaItem) => {
     if (!item.tanggal_lahir) return false
     const parts = item.tanggal_lahir.split('-')
     if (parts.length === 3) {
@@ -322,7 +353,7 @@ export default function DashboardPage() {
         <div className="bg-white/15 backdrop-blur-md p-3 rounded-lg border border-white/25 w-full md:w-auto min-w-[280px] relative">
           {ulgTahunBulanIni.length > 0 ? (
             <ul className="space-y-1 text-xs">
-              {ulgTahunBulanIni.map((m) => (
+              {ulgTahunBulanIni.map((m: RemajaItem) => (
                 <li key={m.id} className="flex justify-between gap-4 font-medium">
                   <span>🎉 {m.nama_lengkap}</span>
                   <span className="text-amber-50/80">{m.tanggal_lahir}</span>
