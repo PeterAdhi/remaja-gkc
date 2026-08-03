@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
   }, [])
 
-  function handleLoginAdmin(e) {
+  function handleLoginAdmin(e: any) {
     e.preventDefault()
     if (adminPassword === 'adminremaja123') {
       setIsAdmin(true)
