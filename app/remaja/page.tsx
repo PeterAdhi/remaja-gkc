@@ -82,7 +82,7 @@ export default function RemajaPage() {
               onChange={(e) => setFormData({ ...formData, nama_lengkap: e.target.value })}
             />
             <textarea
-              rows="3"
+              rows={3}
               placeholder="Alamat Rumah"
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
