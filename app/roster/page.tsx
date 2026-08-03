@@ -22,7 +22,7 @@ export default function RosterPage() {
       try {
         const status = localStorage.getItem('isAdminRemaja')
         setIsAdmin(status === 'true')
-      } catch (err) {
+      } catch (err: any) {
         console.error('Gagal membaca localStorage:', err)
       }
     }
@@ -51,7 +51,7 @@ export default function RosterPage() {
       } else if (data) {
         setRosterList(data)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Terjadi kesalahan saat mengambil data:', err)
     }
   }
@@ -92,7 +92,7 @@ export default function RosterPage() {
         setTimMusik('')
         fetchRoster()
       }
-    } catch (err) {
+    } catch (err: any) {
       alert('Terjadi kesalahan sistem: ' + err.message)
     } finally {
       setLoading(false)
@@ -109,7 +109,7 @@ export default function RosterPage() {
       } else {
         fetchRoster()
       }
-    } catch (err) {
+    } catch (err: any) {
       alert('Terjadi kesalahan sistem: ' + err.message)
     }
   }
