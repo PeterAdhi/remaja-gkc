@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
-  const [remajaList, setRemajaList] = useState([])
-  const [jadwalTemaList, setJadwalTemaList] = useState([])
+  const [remajaList, setRemajaList] = useState<any[]>([])
+  const [jadwalTemaList, setJadwalTemaList] = useState<any>([])
   const [nextRoster, setNextRoster] = useState(null)
   const [loadingRoster, setLoadingRoster] = useState(true)
 
