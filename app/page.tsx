@@ -148,27 +148,40 @@ export default function DashboardPage() {
   return (
     <main className="max-w-7xl mx-auto p-5 md:p-12 space-y-7">
 
-      {/* Header Dashboard */}
-      <div className="reveal card-glass p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">✝️</span>
-          <div>
-            <h1
-              className="text-2xl font-bold bg-clip-text text-transparent"
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                backgroundImage: 'linear-gradient(90deg, #6B4FBB, #B4862F)',
-              }}
-            >
-              Portal Remaja GKC
-            </h1>
-            <p className="text-gray-500 text-sm">Selamat datang di pusat informasi dan pelayanan remaja.</p>
-          </div>
+      {/* 1. NOTIFIKASI ULANG TAHUN REMAJA BULAN INI */}
+      <div className="reveal delay-1 relative overflow-hidden text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4"
+        style={{ background: 'linear-gradient(120deg, #B4862F, #D4AF37 45%, #E0A93A)' }}
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <span className="confetti" style={{ left: '8%', animationDelay: '0s' }}>🎈</span>
+          <span className="confetti" style={{ left: '38%', animationDelay: '.8s' }}>✨</span>
+          <span className="confetti" style={{ left: '70%', animationDelay: '1.4s' }}>🎈</span>
+          <span className="confetti" style={{ left: '90%', animationDelay: '.4s' }}>✨</span>
+        </div>
+        <div className="space-y-1 relative">
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px' }}>
+            🎂 Selamat Ulang Tahun untuk Remaja Bulan {namaBulanAktif}!
+          </h2>
+          <p className="text-xs text-amber-50/90">Mari dukung dan doakan rekan-rekan remaja yang berulang tahun pada bulan ini.</p>
+        </div>
+        <div className="bg-white/15 backdrop-blur-md p-3 rounded-lg border border-white/25 w-full md:w-auto min-w-[280px] relative">
+          {ulgTahunBulanIni.length > 0 ? (
+            <ul className="space-y-1 text-xs">
+              {ulgTahunBulanIni.map((m: RemajaItem) => (
+                <li key={m.id} className="flex justify-between gap-4 font-medium">
+                  <span>🎉 {m.nama_lengkap}</span>
+                  <span className="text-amber-50/80">{m.tanggal_lahir}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-amber-50/90 italic text-center">Belum ada data remaja yang berulang tahun bulan ini.</p>
+          )}
         </div>
       </div>
 
-      {/* COUNTDOWN IBADAH REMAJA */}
-      <div className="reveal delay-1 relative overflow-hidden text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-6"
+      {/* 2. COUNTDOWN IBADAH REMAJA */}
+      <div className="reveal delay-2 relative overflow-hidden text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-6"
         style={{
           background: 'linear-gradient(120deg, #1B1140 0%, #2B1B63 45%, #3A2472 100%)',
           border: '1px solid rgba(244,211,94,.25)',
@@ -218,8 +231,53 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KOTAK PETUGAS PELAYANAN / ROSTER TERDEKAT */}
-      <div className="reveal delay-2 card-glass p-6 rounded-2xl space-y-4">
+      {/* 3. TEMA SABTU YANG AKAN DATANG (Otomatis) */}
+      <div className="reveal delay-3 tilt-card text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4"
+        style={{ background: 'linear-gradient(135deg, #3A2472, #6B3FA0 60%, #8347B0)' }}
+      >
+        <div className="space-y-2">
+          <span className="badge-gold text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Tema Ibadah Mendatang</span>
+          <h2 className="text-xl font-bold mt-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📅 Sabtu, {formatTargetSabtu}</h2>
+          {temaSabtuIni ? (
+            <div className="space-y-1 mt-2">
+              <p className="text-sm font-semibold text-amber-200">Tema: "{temaSabtuIni.tema}"</p>
+              <p className="text-xs text-purple-100"><b>Tujuan:</b> {temaSabtuIni.tujuan}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-purple-200 italic mt-2">
+              Tema untuk Sabtu ini belum diinput oleh Admin melalui menu Jadwal Tema.
+            </p>
+          )}
+        </div>
+        <a
+          href="/tema"
+          className="btn-gold inline-block text-xs font-bold py-2.5 px-4 rounded-lg text-center self-start"
+        >
+          Lihat Semua Jadwal Tema &rarr;
+        </a>
+      </div>
+
+      {/* 4. WAJIB PENDATAAN REMAJA */}
+      <div className="reveal delay-4 tilt-card text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4"
+        style={{ background: 'linear-gradient(135deg, #2B1B63, #4A2E8C 60%, #5C3A9E)' }}
+      >
+        <div className="space-y-2">
+          <span className="badge-gold text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Informasi Penting</span>
+          <h2 className="text-xl font-bold mt-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📝 Wajib Melakukan Pendataan Remaja</h2>
+          <p className="text-xs text-indigo-100/90 leading-relaxed">
+            Setiap rekan-rekan remaja diwajibkan untuk mengisi dan memperbarui data diri (Nama, Alamat, Asal Sekolah, dan Tanggal Lahir) melalui menu Pendataan Remaja agar tercatat dalam sistem gereja.
+          </p>
+        </div>
+        <a
+          href="/remaja"
+          className="btn-gold inline-block text-xs font-bold py-2.5 px-4 rounded-lg text-center self-start"
+        >
+          Buka Form Pendataan Remaja &rarr;
+        </a>
+      </div>
+
+      {/* 5. KOTAK PETUGAS PELAYANAN / ROSTER TERDEKAT */}
+      <div className="reveal delay-5 card-glass p-6 rounded-2xl space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Jadwal Petugas</span>
@@ -281,88 +339,6 @@ export default function DashboardPage() {
           >
             Lihat Semua Jadwal Roster &rarr;
           </a>
-        </div>
-      </div>
-
-      {/* Grid: Wajib Pendataan & Tema Sabtu Terdekat */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        {/* Kotak 1: Wajib Pendataan Remaja */}
-        <div className="reveal delay-3 tilt-card text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4"
-          style={{ background: 'linear-gradient(135deg, #2B1B63, #4A2E8C 60%, #5C3A9E)' }}
-        >
-          <div className="space-y-2">
-            <span className="badge-gold text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Informasi Penting</span>
-            <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📝 Wajib Melakukan Pendataan Remaja</h2>
-            <p className="text-xs text-indigo-100/90 leading-relaxed">
-              Setiap rekan-rekan remaja diwajibkan untuk mengisi dan memperbarui data diri (Nama, Alamat, Asal Sekolah, dan Tanggal Lahir) melalui menu Pendataan Remaja agar tercatat dalam sistem gereja.
-            </p>
-          </div>
-          <a
-            href="/remaja"
-            className="btn-gold inline-block text-xs font-bold py-2.5 px-4 rounded-lg text-center"
-          >
-            Buka Form Pendataan Remaja &rarr;
-          </a>
-        </div>
-
-        {/* Kotak 2: Tema Sabtu yang Akan Datang (Otomatis) */}
-        <div className="reveal delay-4 tilt-card text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4"
-          style={{ background: 'linear-gradient(135deg, #3A2472, #6B3FA0 60%, #8347B0)' }}
-        >
-          <div className="space-y-2">
-            <span className="badge-gold text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Tema Ibadah Mendatang</span>
-            <h2 className="text-xl font-bold" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📅 Sabtu, {formatTargetSabtu}</h2>
-            {temaSabtuIni ? (
-              <div className="space-y-1 mt-2">
-                <p className="text-sm font-semibold text-amber-200">Tema: "{temaSabtuIni.tema}"</p>
-                <p className="text-xs text-purple-100"><b>Tujuan:</b> {temaSabtuIni.tujuan}</p>
-              </div>
-            ) : (
-              <p className="text-xs text-purple-200 italic mt-2">
-                Tema untuk Sabtu ini belum diinput oleh Admin melalui menu Jadwal Tema.
-              </p>
-            )}
-          </div>
-          <a
-            href="/tema"
-            className="btn-gold inline-block text-xs font-bold py-2.5 px-4 rounded-lg text-center"
-          >
-            Lihat Semua Jadwal Tema &rarr;
-          </a>
-        </div>
-
-      </div>
-
-      {/* NOTIFIKASI ULANG TAHUN REMAJA BULAN INI */}
-      <div className="reveal delay-5 relative overflow-hidden text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4"
-        style={{ background: 'linear-gradient(120deg, #B4862F, #D4AF37 45%, #E0A93A)' }}
-      >
-        <div className="pointer-events-none absolute inset-0">
-          <span className="confetti" style={{ left: '8%', animationDelay: '0s' }}>🎈</span>
-          <span className="confetti" style={{ left: '38%', animationDelay: '.8s' }}>✨</span>
-          <span className="confetti" style={{ left: '70%', animationDelay: '1.4s' }}>🎈</span>
-          <span className="confetti" style={{ left: '90%', animationDelay: '.4s' }}>✨</span>
-        </div>
-        <div className="space-y-1 relative">
-          <h2 className="text-lg font-bold" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '22px' }}>
-            🎂 Selamat Ulang Tahun untuk Remaja Bulan {namaBulanAktif}!
-          </h2>
-          <p className="text-xs text-amber-50/90">Mari dukung dan doakan rekan-rekan remaja yang berulang tahun pada bulan ini.</p>
-        </div>
-        <div className="bg-white/15 backdrop-blur-md p-3 rounded-lg border border-white/25 w-full md:w-auto min-w-[280px] relative">
-          {ulgTahunBulanIni.length > 0 ? (
-            <ul className="space-y-1 text-xs">
-              {ulgTahunBulanIni.map((m: RemajaItem) => (
-                <li key={m.id} className="flex justify-between gap-4 font-medium">
-                  <span>🎉 {m.nama_lengkap}</span>
-                  <span className="text-amber-50/80">{m.tanggal_lahir}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-amber-50/90 italic text-center">Belum ada data remaja yang berulang tahun bulan ini.</p>
-          )}
         </div>
       </div>
 

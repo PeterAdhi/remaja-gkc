@@ -10,11 +10,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: '✦' },
-  { href: '/tema', label: 'Jadwal Tema', icon: '✦' },
+  { href: '/tema', label: 'Tema', icon: '✦' },
   { href: '/roster', label: 'Roster Pelayanan', icon: '✦' },
-  { href: '/tugas', label: 'Penjelasan Tugas', icon: '✦' },
-  { href: '/lagu', label: 'Manajemen Lagu', icon: '✦' },
-  { href: '/remaja', label: 'Pendataan Remaja', icon: '✦' },
+  { href: '/tugas', label: 'Penjelasan Pelayanan', icon: '✦' },
+  { href: '/lagu', label: 'Song List', icon: '✦' },
+  { href: '/remaja', label: 'Data Remaja', icon: '✦' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

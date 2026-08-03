@@ -131,13 +131,20 @@ export default function RemajaPage() {
               value={formData.asal_sekolah}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, asal_sekolah: e.target.value })}
             />
-            <input
-              type="date"
-              required
-              className="w-full p-2.5 rounded-lg text-sm input-gold"
-              value={formData.tanggal_lahir}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
-            />
+            <div className="space-y-1">
+              <label htmlFor="tanggal_lahir" className="block text-xs font-semibold text-amber-800/70">
+                🎂 Tanggal Lahir (Ulang Tahun)
+              </label>
+              <input
+                id="tanggal_lahir"
+                type="date"
+                required
+                className="w-full p-2.5 rounded-lg text-sm input-gold"
+                value={formData.tanggal_lahir}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
+              />
+              <p className="text-[11px] text-gray-500">Isi sesuai tanggal lahir untuk keperluan notifikasi ulang tahun.</p>
+            </div>
             <button
               type="submit"
               disabled={loadingRemaja}

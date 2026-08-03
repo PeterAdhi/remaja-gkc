@@ -82,6 +82,16 @@ export default function TemaPage() {
     item.tanggal_sabtu.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Helper untuk format tanggal jadi lebih enak dibaca (opsional, fallback ke string asli jika gagal)
+  function formatTanggal(tgl: string) {
+    try {
+      const d = new Date(tgl)
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    } catch {
+      return tgl
+    }
+  }
+
   return (
     <main className="max-w-7xl mx-auto p-5 md:p-12 space-y-7">
 
@@ -204,27 +214,39 @@ export default function TemaPage() {
 
           {/* List Jadwal */}
           {filteredJadwal.length > 0 ? (
-            <div className="rounded-lg overflow-hidden divide-y" style={{ border: '1px solid rgba(212,175,55,.25)', borderColor: 'rgba(212,175,55,.25)' }}>
-              {filteredJadwal.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="table-row p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                >
-                  <div className="space-y-1">
-                    <span className="badge-gold text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                      Sabtu, {item.tanggal_sabtu}
-                    </span>
-                    <h3 className="text-base font-bold text-gray-900 mt-1">"{item.tema}"</h3>
-                    <p className="text-xs text-gray-600"><b>Tujuan:</b> {item.tujuan}</p>
+            <div className="space-y-4">
+              {filteredJadwal.map((item: any, idx: number) => (
+                <div key={item.id} className="jadwal-card reveal" style={{ animationDelay: `${0.03 * idx}s` }}>
+                  <div className="jadwal-card-accent" />
+                  <div className="jadwal-card-body">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="jadwal-icon">📅</span>
+                        <span className="badge-gold text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                          Sabtu, {formatTanggal(item.tanggal_sabtu)}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition shrink-0"
+                        >
+                          🗑️ Hapus
+                        </button>
+                      )}
+                    </div>
+
+                    <h3 className="jadwal-title">
+                      "{item.tema}"
+                    </h3>
+
+                    <div className="jadwal-divider" />
+
+                    <p className="jadwal-tujuan">
+                      <span className="jadwal-tujuan-label">Tujuan</span>
+                      {item.tujuan}
+                    </p>
                   </div>
-                  {isAdmin && (
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition shrink-0"
-                    >
-                      Hapus
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -275,15 +297,61 @@ export default function TemaPage() {
           box-shadow: 0 0 0 3px rgba(212,175,55,.2);
         }
 
-        .table-row {
-          border-top: 1px solid rgba(212,175,55,.2);
-          transition: background .15s ease;
+        /* ===== Kartu Jadwal Tema (baru) ===== */
+        .jadwal-card {
+          position: relative;
+          display: flex;
+          border-radius: 16px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #FFFDF8, #FFFFFF);
+          border: 1px solid rgba(212,175,55,.28);
+          box-shadow: 0 4px 14px rgba(90,60,150,.06);
+          transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
-        .table-row:first-child {
-          border-top: none;
+        .jadwal-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 14px 28px rgba(90,60,150,.14);
+          border-color: rgba(212,175,55,.55);
         }
-        .table-row:hover {
-          background: #FBF6EA;
+        .jadwal-card-accent {
+          width: 6px;
+          flex-shrink: 0;
+          background: linear-gradient(180deg, #6B4FBB, #B4862F);
+        }
+        .jadwal-card-body {
+          flex: 1;
+          padding: 18px 20px;
+        }
+        .jadwal-icon {
+          font-size: .9rem;
+          opacity: .8;
+        }
+        .jadwal-title {
+          margin-top: 10px;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: #241246;
+          font-family: 'Cormorant Garamond', serif;
+          line-height: 1.35;
+        }
+        .jadwal-divider {
+          margin: 10px 0;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(212,175,55,.35), rgba(212,175,55,0));
+        }
+        .jadwal-tujuan {
+          font-size: .82rem;
+          line-height: 1.6;
+          color: #4b5563;
+        }
+        .jadwal-tujuan-label {
+          display: inline-block;
+          font-weight: 700;
+          color: #6B4FBB;
+          margin-right: 6px;
+          text-transform: uppercase;
+          font-size: .68rem;
+          letter-spacing: .04em;
         }
 
         .tilt-card {
@@ -305,7 +373,7 @@ export default function TemaPage() {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .reveal, .tilt-card, .btn-gold, .table-row {
+          .reveal, .tilt-card, .btn-gold, .jadwal-card {
             animation: none !important;
             transition: none !important;
           }

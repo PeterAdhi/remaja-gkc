@@ -14,6 +14,7 @@ export default function RosterPage() {
   const [multimedia, setMultimedia] = useState<string>('')
   const [pendamping, setPendamping] = useState<string>('')
   const [timMusik, setTimMusik] = useState<string>('')
+  const [timPiket, setTimPiket] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [searchTerm, setSearchTerm] = useState<string>('')
 
@@ -74,7 +75,8 @@ export default function RosterPage() {
           warta: warta,
           multimedia: multimedia,
           pendamping: pendamping,
-          tim_musik: timMusik
+          tim_musik: timMusik,
+          tim_piket: timPiket
         }
       ])
 
@@ -90,6 +92,7 @@ export default function RosterPage() {
         setMultimedia('')
         setPendamping('')
         setTimMusik('')
+        setTimPiket('')
         fetchRoster()
       }
     } catch (err: any) {
@@ -124,9 +127,20 @@ export default function RosterPage() {
       item.warta?.toLowerCase().includes(q) ||
       item.multimedia?.toLowerCase().includes(q) ||
       item.pendamping?.toLowerCase().includes(q) ||
-      item.tim_musik?.toLowerCase().includes(q)
+      item.tim_musik?.toLowerCase().includes(q) ||
+      item.tim_piket?.toLowerCase().includes(q)
     )
   })
+
+  // Helper format tanggal biar lebih enak dibaca (sama seperti halaman Tema)
+  function formatTanggal(tgl: string) {
+    try {
+      const d = new Date(tgl)
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    } catch {
+      return tgl
+    }
+  }
 
   return (
     <main className="max-w-7xl mx-auto p-5 md:p-12 space-y-7">
@@ -245,6 +259,16 @@ export default function RosterPage() {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setTimMusik(e.target.value)}
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tim Piket</label>
+                <input
+                  type="text"
+                  placeholder="Nama Anggota Tim Piket"
+                  className="w-full p-2.5 rounded-lg text-sm input-gold"
+                  value={timPiket}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setTimPiket(e.target.value)}
+                />
+              </div>
             </div>
             <div className="flex justify-end pt-2">
               <button
@@ -299,36 +323,91 @@ export default function RosterPage() {
           )}
         </div>
 
-        {/* List Roster */}
+        {/* List Roster - desain kartu seperti halaman Tema */}
         {filteredRoster.length > 0 ? (
-          <div className="rounded-lg overflow-hidden divide-y" style={{ border: '1px solid rgba(212,175,55,.25)' }}>
-            {filteredRoster.map((item: any) => (
-              <div
-                key={item.id}
-                className="table-row p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-              >
-                <div className="space-y-1 w-full">
-                  <span className="badge-gold text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    Sabtu, {item.tanggal_sabtu}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-gray-700 mt-2">
-                    <p>📜 <b>Liturgos:</b> {item.liturgos || '-'}</p>
-                    <p>👥 <b>Usher & Kolektan:</b> {item.usher_kolektan || '-'}</p>
-                    <p>🙏 <b>Doa Syafaat:</b> {item.doa_syafaat || '-'}</p>
-                    <p>📢 <b>Warta:</b> {item.warta || '-'}</p>
-                    <p>💻 <b>Multimedia:</b> {item.multimedia || '-'}</p>
-                    <p>🤝 <b>Pendamping:</b> {item.pendamping || '-'}</p>
-                    <p>🎸 <b>Tim Musik:</b> {item.tim_musik || '-'}</p>
+          <div className="space-y-4">
+            {filteredRoster.map((item: any, idx: number) => (
+              <div key={item.id} className="jadwal-card reveal" style={{ animationDelay: `${0.03 * idx}s` }}>
+                <div className="jadwal-card-accent" />
+                <div className="jadwal-card-body">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="jadwal-icon">📅</span>
+                      <span className="badge-gold text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                        Sabtu, {formatTanggal(item.tanggal_sabtu)}
+                      </span>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition shrink-0"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="jadwal-divider" />
+
+                  <div className="petugas-grid">
+                    <div className="petugas-item">
+                      <span className="petugas-icon">📜</span>
+                      <div>
+                        <span className="petugas-label">Liturgos</span>
+                        <p className="petugas-value">{item.liturgos || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">👥</span>
+                      <div>
+                        <span className="petugas-label">Usher & Kolektan</span>
+                        <p className="petugas-value">{item.usher_kolektan || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">🙏</span>
+                      <div>
+                        <span className="petugas-label">Doa Syafaat</span>
+                        <p className="petugas-value">{item.doa_syafaat || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">📢</span>
+                      <div>
+                        <span className="petugas-label">Warta</span>
+                        <p className="petugas-value">{item.warta || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">💻</span>
+                      <div>
+                        <span className="petugas-label">Multimedia</span>
+                        <p className="petugas-value">{item.multimedia || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">🤝</span>
+                      <div>
+                        <span className="petugas-label">Pendamping</span>
+                        <p className="petugas-value">{item.pendamping || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">🎸</span>
+                      <div>
+                        <span className="petugas-label">Tim Musik</span>
+                        <p className="petugas-value">{item.tim_musik || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="petugas-item">
+                      <span className="petugas-icon">🧹</span>
+                      <div>
+                        <span className="petugas-label">Tim Piket</span>
+                        <p className="petugas-value">{item.tim_piket || '-'}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition shrink-0"
-                  >
-                    Hapus
-                  </button>
-                )}
               </div>
             ))}
           </div>
@@ -377,15 +456,85 @@ export default function RosterPage() {
           box-shadow: 0 0 0 3px rgba(212,175,55,.2);
         }
 
-        .table-row {
-          border-top: 1px solid rgba(212,175,55,.2);
-          transition: background .15s ease;
+        /* ===== Kartu Roster (sama seperti kartu Tema) ===== */
+        .jadwal-card {
+          position: relative;
+          display: flex;
+          border-radius: 16px;
+          overflow: hidden;
+          background: linear-gradient(180deg, #FFFDF8, #FFFFFF);
+          border: 1px solid rgba(212,175,55,.28);
+          box-shadow: 0 4px 14px rgba(90,60,150,.06);
+          transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
-        .table-row:first-child {
-          border-top: none;
+        .jadwal-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 14px 28px rgba(90,60,150,.14);
+          border-color: rgba(212,175,55,.55);
         }
-        .table-row:hover {
+        .jadwal-card-accent {
+          width: 6px;
+          flex-shrink: 0;
+          background: linear-gradient(180deg, #6B4FBB, #B4862F);
+        }
+        .jadwal-card-body {
+          flex: 1;
+          padding: 18px 20px;
+        }
+        .jadwal-icon {
+          font-size: .9rem;
+          opacity: .8;
+        }
+        .jadwal-divider {
+          margin: 12px 0;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(212,175,55,.35), rgba(212,175,55,0));
+        }
+
+        /* Grid petugas roster */
+        .petugas-grid {
+          display: grid;
+          grid-template-columns: repeat(1, minmax(0, 1fr));
+          gap: 10px 20px;
+        }
+        @media (min-width: 640px) {
+          .petugas-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (min-width: 1024px) {
+          .petugas-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+        .petugas-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 8px 10px;
+          border-radius: 10px;
           background: #FBF6EA;
+          border: 1px solid rgba(212,175,55,.18);
+        }
+        .petugas-icon {
+          font-size: .95rem;
+          margin-top: 1px;
+          opacity: .85;
+        }
+        .petugas-label {
+          display: block;
+          font-weight: 700;
+          color: #6B4FBB;
+          text-transform: uppercase;
+          font-size: .64rem;
+          letter-spacing: .04em;
+        }
+        .petugas-value {
+          font-size: .82rem;
+          color: #241246;
+          font-weight: 600;
+          line-height: 1.4;
+          margin-top: 1px;
         }
 
         .tilt-card {
@@ -407,7 +556,7 @@ export default function RosterPage() {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .reveal, .tilt-card, .btn-gold, .table-row {
+          .reveal, .tilt-card, .jadwal-card {
             animation: none !important;
             transition: none !important;
           }
