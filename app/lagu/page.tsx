@@ -8,7 +8,7 @@ export default function LaguPage() {
   const [loadingLagu, setLoadingLagu] = useState(false)
   const [pilihanForm, setPilihanForm] = useState({ lagu_id: '', tanggal_ibadah: '' })
   const [searchLagu, setSearchLagu] = useState('')
-  const [selectedLagu, setSelectedLagu] = useState(null)
+  const [selectedLagu, setSelectedLagu] = useState<any>(null)
 
   useEffect(() => {
     fetchLagu()
@@ -23,16 +23,16 @@ export default function LaguPage() {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [])
 
-const filteredLaguList = laguList.filter((l: any) =>
-  l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
-)
+  const filteredLaguList = laguList.filter((l: any) =>
+    l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
+  )
 
   async function fetchLagu() {
     const { data } = await supabase.from('lagu').select('*').order('judul_lagu', { ascending: true })
     if (data) setLaguList(data)
   }
 
-  async function handleTambahLagu(e) {
+  async function handleTambahLagu(e: any) {
     e.preventDefault()
     setLoadingLagu(true)
     const { error } = await supabase.from('lagu').insert([newLagu])
@@ -45,7 +45,7 @@ const filteredLaguList = laguList.filter((l: any) =>
     setLoadingLagu(false)
   }
 
-  async function handlePilihLagu(e) {
+  async function handlePilihLagu(e: any) {
     e.preventDefault()
     const { lagu_id, tanggal_ibadah } = pilihanForm
     const tanggalDipilih = new Date(tanggal_ibadah)
@@ -120,7 +120,7 @@ const filteredLaguList = laguList.filter((l: any) =>
               onChange={(e) => setNewLagu({ ...newLagu, judul_lagu: e.target.value })}
             />
             <textarea
-              rows="4"
+              rows={4}
               placeholder="Lirik lagu..."
               required
               className="w-full p-2.5 rounded-lg text-sm input-gold"
@@ -160,7 +160,7 @@ const filteredLaguList = laguList.filter((l: any) =>
               onChange={(e) => setPilihanForm({ ...pilihanForm, lagu_id: e.target.value })}
             >
               <option value="">-- Pilih Lagu --</option>
-              {laguList.map((l) => (
+              {laguList.map((l: any) => (
                 <option key={l.id} value={l.id}>{l.judul_lagu}</option>
               ))}
             </select>
@@ -224,7 +224,7 @@ const filteredLaguList = laguList.filter((l: any) =>
 
         {filteredLaguList.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-            {filteredLaguList.map((l) => (
+            {filteredLaguList.map((l: any) => (
               <button
                 key={l.id}
                 onClick={() => setSelectedLagu(l)}
