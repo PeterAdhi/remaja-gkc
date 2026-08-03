@@ -77,7 +77,7 @@ export default function TemaPage() {
     }
   }
 
-  const filteredJadwal = jadwalList.filter((item) =>
+  const filteredJadwal = jadwalList.filter((item: any) =>
     item.tema.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.tanggal_sabtu.toLowerCase().includes(searchTerm.toLowerCase())
   )
