@@ -16,7 +16,7 @@ export default function LaguPage() {
 
   // Tutup pop up dengan tombol Escape
   useEffect(() => {
-    function handleEsc(e) {
+    function handleEsc(e: any) {
       if (e.key === 'Escape') setSelectedLagu(null)
     }
     window.addEventListener('keydown', handleEsc)
