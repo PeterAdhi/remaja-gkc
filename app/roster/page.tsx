@@ -99,7 +99,7 @@ export default function RosterPage() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: any) {
     if (!confirm('Yakin ingin menghapus roster ini?')) return
 
     try {
