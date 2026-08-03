@@ -3,13 +3,12 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function LaguPage() {
-  const [laguList, setLaguList] = useState([])
+  const [laguList, setLaguList] = useState<any[]>([])
   const [newLagu, setNewLagu] = useState({ judul_lagu: '', lirik: '' })
   const [loadingLagu, setLoadingLagu] = useState(false)
   const [pilihanForm, setPilihanForm] = useState({ lagu_id: '', tanggal_ibadah: '' })
   const [searchLagu, setSearchLagu] = useState('')
   const [selectedLagu, setSelectedLagu] = useState(null)
-  const [laguList, setLaguList] = useState<any[]>([])
 
   useEffect(() => {
     fetchLagu()
