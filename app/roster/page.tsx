@@ -56,7 +56,7 @@ export default function RosterPage() {
     }
   }
 
-  async function handleTambahRoster(e) {
+  async function handleTambahRoster(e: any) {
     e.preventDefault()
     if (!tanggalSabtu) {
       alert('Tanggal Sabtu harus diisi!')
