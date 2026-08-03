@@ -67,7 +67,7 @@ export default function TemaPage() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: any) {
     if (!confirm('Yakin ingin menghapus jadwal ini?')) return
     const { error } = await supabase.from('jadwal_tema').delete().eq('id', id)
     if (error) {
