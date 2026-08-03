@@ -98,7 +98,7 @@ export default function DashboardPage() {
   const targetSaturday = new Date(today)
   targetSaturday.setDate(today.getDate() + distanceToSaturday)
   const formatTargetSabtu = targetSaturday.toISOString().split('T')[0]
-  const temaSabtuIni = jadwalTemaList.find((item) => item.tanggal_sabtu === formatTargetSabtu)
+  const temaSabtuIni = jadwalTemaList.find((item: any) => item.tanggal_sabtu === formatTargetSabtu)
 
   // Notifikasi Ulang Tahun Bulan Ini
   const currentMonthIndex = new Date().getMonth() + 1
