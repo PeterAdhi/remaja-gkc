@@ -26,13 +26,60 @@ export default function TemaPage() {
     // Interval pendek untuk memastikan sinkronisasi langsung saat login dari navbar
     const interval = setInterval(checkAdmin, 500)
 
-    fetchJadwal()
+    // Bersihkan jadwal tema bulan-bulan sebelumnya (maksimal 1x per bulan), lalu ambil data terbaru
+    bersihkanTemaBulanLalu().finally(() => {
+      fetchJadwal()
+    })
 
     return () => {
       window.removeEventListener('storage', checkAdmin)
       clearInterval(interval)
     }
   }, [])
+
+  // Tanggal awal bulan berjalan, format YYYY-MM-01
+  function getAwalBulanIni(): string {
+    const now = new Date()
+    const awal = new Date(now.getFullYear(), now.getMonth(), 1)
+    return awal.toISOString().split('T')[0]
+  }
+
+  // Hapus semua jadwal tema dengan tanggal_sabtu sebelum awal bulan ini.
+  // Hanya dijalankan sekali per bulan (ditandai lewat localStorage) supaya tidak
+  // memanggil delete berulang-ulang setiap kali halaman dibuka.
+  async function bersihkanTemaBulanLalu(paksa: boolean = false) {
+    const bulanIni = new Date().toISOString().slice(0, 7) // format YYYY-MM
+
+    try {
+      if (!paksa) {
+        const bulanTerakhirDibersihkan = localStorage.getItem('temaCleanupBulan')
+        if (bulanTerakhirDibersihkan === bulanIni) {
+          return // sudah pernah dibersihkan bulan ini, tidak perlu diulang
+        }
+      }
+
+      const awalBulanIni = getAwalBulanIni()
+      const { error } = await supabase
+        .from('jadwal_tema')
+        .delete()
+        .lt('tanggal_sabtu', awalBulanIni)
+
+      if (error) {
+        console.error('Gagal membersihkan jadwal tema bulan lalu:', error.message)
+      } else {
+        localStorage.setItem('temaCleanupBulan', bulanIni)
+      }
+    } catch (err: unknown) {
+      console.error('Terjadi kesalahan saat membersihkan jadwal tema bulan lalu:', err)
+    }
+  }
+
+  async function handleBersihkanManual() {
+    if (!confirm('Hapus semua jadwal tema dari bulan-bulan sebelumnya sekarang juga?')) return
+    await bersihkanTemaBulanLalu(true)
+    alert('Jadwal tema bulan-bulan sebelumnya berhasil dihapus.')
+    fetchJadwal()
+  }
 
   async function fetchJadwal() {
     const { data, error } = await supabase
@@ -110,8 +157,17 @@ export default function TemaPage() {
               Jadwal & Tema Ibadah Remaja
             </h1>
             <p className="text-gray-500 text-sm">Daftar tema dan tujuan firman Tuhan untuk ibadah remaja setiap hari Sabtu.</p>
+            <p className="text-[11px] text-amber-700/70 italic mt-0.5">🗑️ Jadwal tema bulan-bulan sebelumnya otomatis dihapus setiap awal bulan.</p>
           </div>
         </div>
+        {isAdmin && (
+          <button
+            onClick={handleBersihkanManual}
+            className="text-xs font-semibold text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition shrink-0 whitespace-nowrap"
+          >
+            🗑️ Bersihkan Tema Bulan Lalu
+          </button>
+        )}
       </div>
 
       {/* Grid: Form & Daftar Jadwal */}

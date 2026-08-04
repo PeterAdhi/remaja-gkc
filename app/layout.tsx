@@ -10,11 +10,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: '✦' },
+  { href: '/remaja', label: 'Data Remaja', icon: '✦' },
   { href: '/tema', label: 'Tema', icon: '✦' },
+  { href: '/lagu', label: 'Song List', icon: '✦' },
   { href: '/roster', label: 'Roster Pelayanan', icon: '✦' },
   { href: '/tugas', label: 'Penjelasan Pelayanan', icon: '✦' },
-  { href: '/lagu', label: 'Song List', icon: '✦' },
-  { href: '/remaja', label: 'Data Remaja', icon: '✦' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   function handleLoginAdmin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (adminPassword === 'adminremaja123') {
+    if (adminPassword === 'teensGKC_') {
       setIsAdmin(true)
       localStorage.setItem('isAdminRemaja', 'true') // Simpan status ke localStorage
       setShowModal(false)
@@ -90,11 +90,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="shimmer-line" />
 
           <div className="max-w-7xl mx-auto px-5 md:px-8 py-3.5 relative flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            {/* Logo — klik untuk kembali ke Dashboard */}
+            <a href="/" className="flex items-center gap-2.5 shrink-0 group">
               <div className="relative w-9 h-9 flex items-center justify-center">
                 <span className="glow-ring" />
-                <span className="text-xl relative">✝️</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="Logo Remaja GKC"
+                  className="relative w-9 h-9 object-cover rounded-full border border-amber-200/40"
+                />
               </div>
               <div className="leading-tight">
                 <span
@@ -113,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   bertumbuh dalam terang kasih-Nya
                 </span>
               </div>
-            </div>
+            </a>
 
             {/* Menu Navigasi — Desktop */}
             <div className="hidden lg:flex items-center gap-1 text-xs font-medium">
@@ -230,7 +235,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <input
                     type="password"
                     placeholder="Masukkan password..."
-                    className="w-full p-2.5 text-xs rounded-lg bg-white/95 border border-amber-200/40 focus:outline-none focus:ring-2 focus:ring-[#E9B44C] transition"
+                    className="w-full p-2.5 text-xs text-black rounded-lg bg-white/95 border border-amber-200/40 focus:outline-none focus:ring-2 focus:ring-[#E9B44C] transition"
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     autoFocus
