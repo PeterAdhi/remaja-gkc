@@ -70,6 +70,10 @@ export default function LaguPage() {
   const [searchLagu, setSearchLagu] = useState<string>('')
   const [selectedLagu, setSelectedLagu] = useState<Lagu | null>(null)
 
+  // ==== State untuk pagination daftar lagu tersimpan ====
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const ITEMS_PER_PAGE = 9
+
   // ==== State untuk form pilihan lagu mingguan ====
   const [targetSaturday, setTargetSaturday] = useState<string>(getTargetSaturday())
   const [pilihanMinggu, setPilihanMinggu] = useState<Record<string, string>>({})
@@ -112,8 +116,20 @@ export default function LaguPage() {
     return () => window.removeEventListener('keydown', handleEsc as EventListener)
   }, [])
 
+  // Reset ke halaman 1 setiap kali kata kunci pencarian berubah
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchLagu])
+
   const filteredLaguList = laguList.filter((l: Lagu) =>
     l.judul_lagu.toLowerCase().includes(searchLagu.toLowerCase())
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filteredLaguList.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedLaguList = filteredLaguList.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
   )
 
   async function fetchLagu() {
@@ -526,19 +542,63 @@ export default function LaguPage() {
         </div>
 
         {filteredLaguList.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-            {filteredLaguList.map((l: Lagu) => (
-              <button
-                key={l.id}
-                onClick={() => setSelectedLagu(l)}
-                className="petugas-box p-3 rounded-lg text-xs text-left cursor-pointer"
-              >
-                <span className="font-semibold text-gray-800 block mb-1">🎵 {l.judul_lagu}</span>
-                <span className="text-amber-700/60 line-clamp-3">{l.lirik}</span>
-                <span className="block mt-2 text-[10px] font-semibold link-gold">Lihat Lirik &rarr;</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+              {paginatedLaguList.map((l: Lagu) => (
+                <button
+                  key={l.id}
+                  onClick={() => setSelectedLagu(l)}
+                  className="petugas-box p-3 rounded-lg text-xs text-left cursor-pointer"
+                >
+                  <span className="font-semibold text-gray-800 block mb-1">🎵 {l.judul_lagu}</span>
+                  <span className="text-amber-700/60 line-clamp-3">{l.lirik}</span>
+                  <span className="block mt-2 text-[10px] font-semibold link-gold">Lihat Lirik &rarr;</span>
+                </button>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 gap-3 flex-wrap">
+                <span className="text-[11px] text-gray-500">
+                  Halaman {safePage} dari {totalPages} &middot; {filteredLaguList.length} lagu
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="pagination-btn text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    &larr; Sebelumnya
+                  </button>
+
+                  <div className="hidden sm:flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`pagination-num text-xs font-semibold w-7 h-7 rounded-lg ${
+                          page === safePage ? 'pagination-num-active' : ''
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="pagination-btn text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Berikutnya &rarr;
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : laguList.length > 0 ? (
           <p className="text-xs text-gray-500 italic py-4">Tidak ada lagu yang cocok dengan pencarian "{searchLagu}".</p>
         ) : (
@@ -735,6 +795,32 @@ export default function LaguPage() {
 
         .link-gold {
           color: #B4862F;
+        }
+
+        .pagination-btn {
+          color: #6B4FBB;
+          background: #F1EBFB;
+          border: 1px solid rgba(107,79,187,.15);
+          transition: transform .15s ease, background .15s ease;
+        }
+        .pagination-btn:hover:not(:disabled) {
+          background: #E6DBFA;
+          transform: translateY(-1px);
+        }
+
+        .pagination-num {
+          color: #6B4FBB;
+          background: #F1EBFB;
+          border: 1px solid rgba(107,79,187,.15);
+          transition: transform .15s ease, background .15s ease;
+        }
+        .pagination-num:hover {
+          background: #E6DBFA;
+        }
+        .pagination-num-active {
+          color: #241246;
+          background: linear-gradient(135deg, #FCE38A, #F4D35E 45%, #E0A93A);
+          border-color: transparent;
         }
 
         .modal-pop {
