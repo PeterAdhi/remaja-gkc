@@ -24,6 +24,7 @@ interface RosterItem {
   multimedia?: string
   pendamping?: string
   tim_musik?: string
+  tim_piket?: string
 }
 
 interface TimeLeft {
@@ -31,6 +32,23 @@ interface TimeLeft {
   hours: number
   minutes: number
   seconds: number
+}
+
+// Helper format tanggal ke format Indonesia lengkap, contoh: "Sabtu, 8 Agustus 2026"
+function formatTanggalLengkap(tgl?: string): string {
+  if (!tgl) return '-'
+  try {
+    const d = new Date(tgl)
+    if (isNaN(d.getTime())) return tgl
+    return d.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  } catch {
+    return tgl
+  }
 }
 
 export default function DashboardPage() {
@@ -170,7 +188,7 @@ export default function DashboardPage() {
               {ulgTahunBulanIni.map((m: RemajaItem) => (
                 <li key={m.id} className="flex justify-between gap-4 font-medium">
                   <span>🎉 {m.nama_lengkap}</span>
-                  <span className="text-amber-50/80">{m.tanggal_lahir}</span>
+                  <span className="text-amber-50/80">{formatTanggalLengkap(m.tanggal_lahir)}</span>
                 </li>
               ))}
             </ul>
@@ -237,7 +255,7 @@ export default function DashboardPage() {
       >
         <div className="space-y-2">
           <span className="badge-gold text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Tema Ibadah Mendatang</span>
-          <h2 className="text-xl font-bold mt-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📅 Sabtu, {formatTargetSabtu}</h2>
+          <h2 className="text-xl font-bold mt-2" style={{ fontFamily: "'Cormorant Garamond', serif" }}>📅 {formatTanggalLengkap(formatTargetSabtu)}</h2>
           {temaSabtuIni ? (
             <div className="space-y-1 mt-2">
               <p className="text-sm font-semibold text-amber-200">Tema: "{temaSabtuIni.tema}"</p>
@@ -290,7 +308,7 @@ export default function DashboardPage() {
           </div>
           {!loadingRoster && nextRoster && (
             <span className="btn-gold text-xs font-semibold px-3 py-1.5 rounded-lg">
-              Sabtu, {nextRoster.tanggal_sabtu}
+              {formatTanggalLengkap(nextRoster.tanggal_sabtu)}
             </span>
           )}
         </div>
@@ -323,9 +341,13 @@ export default function DashboardPage() {
               <span className="text-amber-700/60 block mb-1">🤝 Pendamping</span>
               <span className="font-semibold text-gray-800">{nextRoster.pendamping || '-'}</span>
             </div>
-            <div className="petugas-box p-3 rounded-lg text-xs sm:col-span-2">
+            <div className="petugas-box p-3 rounded-lg text-xs">
               <span className="text-amber-700/60 block mb-1">🎸 Tim Musik</span>
               <span className="font-semibold text-gray-800">{nextRoster.tim_musik || '-'}</span>
+            </div>
+            <div className="petugas-box p-3 rounded-lg text-xs">
+              <span className="text-amber-700/60 block mb-1">🧹 Tim Piket</span>
+              <span className="font-semibold text-gray-800">{nextRoster.tim_piket || '-'}</span>
             </div>
           </div>
         ) : (

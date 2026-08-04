@@ -11,12 +11,12 @@ export default function TugasPage() {
     {
       icon: '📜',
       title: 'Liturgos',
-      desc: 'Memimpin jalannya tata ibadah (liturgi) dari awal hingga akhir acara.',
+      desc: 'Memimpin jalannya tata ibadah (liturgi) dari awal hingga akhir ibadah.',
     },
     {
       icon: '👥',
       title: 'Usher & Kolektan',
-      desc: 'Menyambut jemaat/remaja, membagikan kolekte, serta mengedarkan persembahan.',
+      desc: 'Menyambut jemaat/remaja, membagikan amplop persembahan, serta mengedarkan kantong persembahan.',
     },
     {
       icon: '🙏',
