@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, FormEvent, ChangeEvent, KeyboardEvent } from 'react'
+import { useState, useEffect, FormEvent, ChangeEvent, ClipboardEvent, KeyboardEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface Lagu {
@@ -127,6 +127,28 @@ export default function LaguPage() {
     } catch (err: unknown) {
       console.error('Terjadi kesalahan saat mengambil data lagu:', err)
     }
+  }
+
+  // Tangani paste di kolom lirik: ambil teks polos apa adanya (termasuk baris kosong & spasi asli),
+  // sisipkan tepat di posisi kursor, tanpa dirapikan/diformat ulang oleh browser.
+  function handlePasteLirik(e: ClipboardEvent<HTMLTextAreaElement>) {
+    e.preventDefault()
+    const pastedText = e.clipboardData.getData('text/plain')
+    const textarea = e.target as HTMLTextAreaElement
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = newLagu.lirik.substring(0, start)
+    const after = newLagu.lirik.substring(end)
+    const updated = before + pastedText + after
+
+    setNewLagu((prev) => ({ ...prev, lirik: updated }))
+
+    // Kembalikan posisi kursor setelah teks yang baru saja ditempel
+    requestAnimationFrame(() => {
+      const newCursorPos = start + pastedText.length
+      textarea.selectionStart = newCursorPos
+      textarea.selectionEnd = newCursorPos
+    })
   }
 
   async function handleTambahLagu(e: FormEvent<HTMLFormElement>) {
@@ -315,6 +337,7 @@ export default function LaguPage() {
                 className="w-full p-3 rounded-lg text-sm input-gold lirik-textarea"
                 value={newLagu.lirik}
                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewLagu({ ...newLagu, lirik: e.target.value })}
+                onPaste={handlePasteLirik}
               />
               <p className="text-[10px] text-gray-400 mt-1">Tips: pisahkan bait dan reff dengan baris kosong agar lebih mudah dibaca di halaman lirik.</p>
             </div>
@@ -554,7 +577,7 @@ export default function LaguPage() {
                 ✕
               </button>
             </div>
-            <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
               {selectedLagu.lirik}
             </p>
           </div>
