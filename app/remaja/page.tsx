@@ -17,6 +17,22 @@ interface FormDataState {
   tanggal_lahir: string
 }
 
+function formatTanggal(tanggal: string): string {
+  if (!tanggal) return '-'
+  const parts = tanggal.split('-')
+  if (parts.length !== 3) return tanggal
+  const [year, month, day] = parts
+  const dd = day.padStart(2, '0')
+  const mm = month.padStart(2, '0')
+  return `${dd}-${mm}-${year}`
+}
+
+// Avatar unik & lucu berdasarkan nama, konsisten tiap dibuka (pakai DiceBear "fun-emoji")
+function getAvatarUrl(nama: string): string {
+  const seed = encodeURIComponent(nama.trim().toLowerCase() || 'anon')
+  return `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${seed}&backgroundType=gradientLinear`
+}
+
 export default function RemajaPage() {
   const [formData, setFormData] = useState<FormDataState>({
     nama_lengkap: '',
@@ -196,7 +212,7 @@ export default function RemajaPage() {
           </div>
 
           {/* Tabel Data Remaja */}
-          <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid rgba(212,175,55,.25)' }}>
+          <div className="overflow-x-auto rounded-xl table-shell">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="table-head">
@@ -210,10 +226,25 @@ export default function RemajaPage() {
                 {filteredRemaja.length > 0 ? (
                   filteredRemaja.map((item: Remaja) => (
                     <tr key={item.id} className="table-row">
-                      <td className="p-3 font-semibold text-gray-800">{item.nama_lengkap}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={getAvatarUrl(item.nama_lengkap)}
+                            alt={`Avatar ${item.nama_lengkap}`}
+                            className="avatar-pic"
+                            loading="lazy"
+                          />
+                          <span className="font-semibold text-gray-800 whitespace-nowrap">{item.nama_lengkap}</span>
+                        </div>
+                      </td>
                       <td className="p-3 text-gray-600">{item.alamat}</td>
                       <td className="p-3 text-gray-600">{item.asal_sekolah}</td>
-                      <td className="p-3 text-gray-600">{item.tanggal_lahir}</td>
+                      <td className="p-3 text-gray-600">
+                        <span className="inline-flex items-center gap-1 tanggal-pill whitespace-nowrap">
+                          <span className="text-[10px]">🎂</span>
+                          {formatTanggal(item.tanggal_lahir)}
+                        </span>
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -266,6 +297,11 @@ export default function RemajaPage() {
           box-shadow: 0 0 0 3px rgba(212,175,55,.2);
         }
 
+        .table-shell {
+          border: 1px solid rgba(212,175,55,.25);
+          box-shadow: 0 4px 14px rgba(90,60,150,.06);
+        }
+
         .table-head {
           background: #F1EBFB;
           color: #6B4FBB;
@@ -279,6 +315,27 @@ export default function RemajaPage() {
         }
         .table-row:hover {
           background: #FBF6EA;
+        }
+
+        .avatar-pic {
+          width: 30px;
+          height: 30px;
+          border-radius: 9999px;
+          flex-shrink: 0;
+          background: #FBF6EA;
+          border: 1.5px solid rgba(212,175,55,.4);
+          box-shadow: 0 2px 6px rgba(90,60,150,.12);
+        }
+
+        .tanggal-pill {
+          background: #FBF6EA;
+          border: 1px solid rgba(212,175,55,.3);
+          color: #6B4FBB;
+          padding: 2px 8px;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 11px;
+          white-space: nowrap;
         }
 
         .tilt-card {
