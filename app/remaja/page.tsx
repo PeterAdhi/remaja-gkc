@@ -44,9 +44,38 @@ export default function RemajaPage() {
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [loadingRemaja, setLoadingRemaja] = useState<boolean>(false)
 
+  // --- State untuk cek status admin (skema sama seperti RosterPage: localStorage 'isAdminRemaja') ---
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+
   useEffect(() => {
-    fetchRemaja()
+    const checkAdmin = () => {
+      try {
+        const status = localStorage.getItem('isAdminRemaja')
+        setIsAdmin(status === 'true')
+      } catch (err: unknown) {
+        console.error('Gagal membaca localStorage:', err)
+      }
+    }
+
+    checkAdmin()
+    window.addEventListener('storage', checkAdmin)
+    const interval = setInterval(checkAdmin, 500)
+
+    return () => {
+      window.removeEventListener('storage', checkAdmin)
+      clearInterval(interval)
+    }
   }, [])
+
+  // Data remaja HANYA diambil kalau isAdmin true, supaya user biasa
+  // tidak ikut mengunduh data (nama, alamat, tgl lahir) ke browser mereka.
+  useEffect(() => {
+    if (isAdmin) {
+      fetchRemaja()
+    } else {
+      setRemajaList([])
+    }
+  }, [isAdmin])
 
   async function fetchRemaja() {
     try {
@@ -71,7 +100,7 @@ export default function RemajaPage() {
       } else {
         alert('Data diri berhasil disimpan!')
         setFormData({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
-        fetchRemaja()
+        if (isAdmin) fetchRemaja()
       }
     } catch (err: any) {
       alert('Terjadi kesalahan sistem: ' + (err?.message || err))
@@ -106,11 +135,15 @@ export default function RemajaPage() {
         </div>
       </div>
 
-      {/* Grid: Form & Ringkasan */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid: Form & (khusus admin) Daftar Remaja */}
+      <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-3' : ''}`}>
 
         {/* Kotak Form Pendataan */}
-        <div className="reveal delay-1 tilt-card card-glass p-6 rounded-2xl space-y-4 md:col-span-1">
+        <div
+          className={`reveal delay-1 tilt-card card-glass p-6 rounded-2xl space-y-4 ${
+            isAdmin ? 'md:col-span-1' : 'md:max-w-md md:mx-auto w-full'
+          }`}
+        >
           <div className="space-y-1">
             <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
               Form Pendataan
@@ -171,95 +204,97 @@ export default function RemajaPage() {
           </form>
         </div>
 
-        {/* Kotak Daftar Remaja */}
-        <div className="reveal delay-2 card-glass p-6 rounded-2xl space-y-4 md:col-span-2">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div>
-              <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                Data Terdaftar
+        {/* Kotak Daftar Remaja — hanya dirender sama sekali kalau admin */}
+        {isAdmin && (
+          <div className="reveal delay-2 card-glass p-6 rounded-2xl space-y-4 md:col-span-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                  Data Terdaftar
+                </span>
+                <h2
+                  className="text-xl font-bold text-gray-800 mt-1"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  👥 Daftar Remaja
+                </h2>
+              </div>
+              <span className="btn-gold text-xs font-semibold px-3 py-1.5 rounded-lg">
+                {remajaList.length} Remaja
               </span>
-              <h2
-                className="text-xl font-bold text-gray-800 mt-1"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                👥 Daftar Remaja
-              </h2>
             </div>
-            <span className="btn-gold text-xs font-semibold px-3 py-1.5 rounded-lg">
-              {remajaList.length} Remaja
-            </span>
-          </div>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-700/50 text-sm">🔍</span>
-            <input
-              type="text"
-              placeholder="Cari nama remaja..."
-              className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
-              value={searchTerm}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-700/50 hover:text-amber-700 text-sm"
-                aria-label="Hapus pencarian"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+            {/* Search Bar */}
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-700/50 text-sm">🔍</span>
+              <input
+                type="text"
+                placeholder="Cari nama remaja..."
+                className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
+                value={searchTerm}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-700/50 hover:text-amber-700 text-sm"
+                  aria-label="Hapus pencarian"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
 
-          {/* Tabel Data Remaja */}
-          <div className="overflow-x-auto rounded-xl table-shell">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="table-head">
-                  <th className="p-3">Nama</th>
-                  <th className="p-3">Alamat</th>
-                  <th className="p-3">Sekolah</th>
-                  <th className="p-3">Ulang Tahun</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRemaja.length > 0 ? (
-                  filteredRemaja.map((item: Remaja) => (
-                    <tr key={item.id} className="table-row">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={getAvatarUrl(item.nama_lengkap)}
-                            alt={`Avatar ${item.nama_lengkap}`}
-                            className="avatar-pic"
-                            loading="lazy"
-                          />
-                          <span className="font-semibold text-gray-800 whitespace-nowrap">{item.nama_lengkap}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-gray-600">{item.alamat}</td>
-                      <td className="p-3 text-gray-600">{item.asal_sekolah}</td>
-                      <td className="p-3 text-gray-600">
-                        <span className="inline-flex items-center gap-1 tanggal-pill whitespace-nowrap">
-                          <span className="text-[10px]">🎂</span>
-                          {formatTanggal(item.tanggal_lahir)}
-                        </span>
+            {/* Tabel Data Remaja */}
+            <div className="overflow-x-auto rounded-xl table-shell">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="table-head">
+                    <th className="p-3">Nama</th>
+                    <th className="p-3">Alamat</th>
+                    <th className="p-3">Sekolah</th>
+                    <th className="p-3">Ulang Tahun</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRemaja.length > 0 ? (
+                    filteredRemaja.map((item: Remaja) => (
+                      <tr key={item.id} className="table-row">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={getAvatarUrl(item.nama_lengkap)}
+                              alt={`Avatar ${item.nama_lengkap}`}
+                              className="avatar-pic"
+                              loading="lazy"
+                            />
+                            <span className="font-semibold text-gray-800 whitespace-nowrap">{item.nama_lengkap}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-gray-600">{item.alamat}</td>
+                        <td className="p-3 text-gray-600">{item.asal_sekolah}</td>
+                        <td className="p-3 text-gray-600">
+                          <span className="inline-flex items-center gap-1 tanggal-pill whitespace-nowrap">
+                            <span className="text-[10px]">🎂</span>
+                            {formatTanggal(item.tanggal_lahir)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="p-4 text-center text-gray-500 italic">
+                        {remajaList.length > 0
+                          ? `Tidak ada remaja yang cocok dengan pencarian "${searchTerm}".`
+                          : 'Belum ada data remaja yang terdaftar.'}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="p-4 text-center text-gray-500 italic">
-                      {remajaList.length > 0
-                        ? `Tidak ada remaja yang cocok dengan pencarian "${searchTerm}".`
-                        : 'Belum ada data remaja yang terdaftar.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 
