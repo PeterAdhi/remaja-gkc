@@ -9,15 +9,6 @@ interface NavItem {
   icon: string
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: '✦' },
-  { href: '/remaja', label: 'Data Remaja', icon: '✦' },
-  { href: '/tema', label: 'Tema', icon: '✦' },
-  { href: '/lagu', label: 'Song List', icon: '✦' },
-  { href: '/roster', label: 'Roster Pelayanan', icon: '✦' },
-  { href: '/tugas', label: 'Penjelasan Pelayanan', icon: '✦' },
-]
-
 // ================= ROOT LAYOUT UTAMA =================
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
@@ -33,6 +24,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       setIsAdmin(true)
     }
   }, [])
+
+  // Definisikan NAV_ITEMS secara dinamis di dalam komponen agar bisa mendeteksi state `isAdmin`
+  const NAV_ITEMS: NavItem[] = [
+    { href: '/', label: 'Dashboard', icon: '✦' },
+    { href: '/remaja', label: 'Data Remaja', icon: '✦' },
+    { href: '/tema', label: 'Tema', icon: '✦' },
+    { href: '/lagu', label: 'Song List', icon: '✦' },
+    { href: '/roster', label: 'Roster Pelayanan', icon: '✦' },
+    { href: '/tugas', label: 'Penjelasan Pelayanan', icon: '✦' },
+    // Menu Presentasi khusus Admin (otomatis tampil jika isAdmin true)
+    ...(isAdmin ? [{ href: '/presentasi/pilih', label: 'Slide Liturgi', icon: '✦' }] : []),
+  ]
 
   function handleLoginAdmin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()

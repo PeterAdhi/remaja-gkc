@@ -2,9 +2,23 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 
+// Mendefinisikan tipe data Roster agar tidak menggunakan 'any'
+interface RosterItem {
+  id: string | number
+  tanggal_sabtu: string
+  liturgos?: string
+  usher_kolektan?: string
+  doa_syafaat?: string
+  warta?: string
+  multimedia?: string
+  pendamping?: string
+  tim_musik?: string
+  tim_piket?: string
+}
+
 export default function RosterPage() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
-  const [rosterList, setRosterList] = useState<any[]>([])
+  const [rosterList, setRosterList] = useState<RosterItem[]>([])
   const [tanggalSabtu, setTanggalSabtu] = useState<string>('')
 
   const [liturgos, setLiturgos] = useState<string>('')
@@ -17,6 +31,9 @@ export default function RosterPage() {
   const [timPiket, setTimPiket] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [searchTerm, setSearchTerm] = useState<string>('')
+
+  // State untuk melacak ID roster yang sedang diedit (null jika sedang mode tambah baru)
+  const [editingId, setEditingId] = useState<string | number | null>(null)
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -32,7 +49,6 @@ export default function RosterPage() {
     window.addEventListener('storage', checkAdmin)
     const interval = setInterval(checkAdmin, 500)
 
-    // Bersihkan roster bulan-bulan sebelumnya (maksimal 1x per bulan), lalu ambil data terbaru
     bersihkanRosterBulanLalu().finally(() => {
       fetchRoster()
     })
@@ -43,24 +59,20 @@ export default function RosterPage() {
     }
   }, [])
 
-  // Tanggal awal bulan berjalan, format YYYY-MM-01
   function getAwalBulanIni(): string {
     const now = new Date()
     const awal = new Date(now.getFullYear(), now.getMonth(), 1)
     return awal.toISOString().split('T')[0]
   }
 
-  // Hapus semua roster dengan tanggal_sabtu sebelum awal bulan ini.
-  // Hanya dijalankan sekali per bulan (ditandai lewat localStorage) supaya tidak
-  // memanggil delete berulang-ulang setiap kali halaman dibuka.
   async function bersihkanRosterBulanLalu(paksa: boolean = false) {
-    const bulanIni = new Date().toISOString().slice(0, 7) // format YYYY-MM
+    const bulanIni = new Date().toISOString().slice(0, 7)
 
     try {
       if (!paksa) {
         const bulanTerakhirDibersihkan = localStorage.getItem('rosterCleanupBulan')
         if (bulanTerakhirDibersihkan === bulanIni) {
-          return // sudah pernah dibersihkan bulan ini, tidak perlu diulang
+          return
         }
       }
 
@@ -104,7 +116,42 @@ export default function RosterPage() {
     }
   }
 
-  async function handleTambahRoster(e: FormEvent<HTMLFormElement>) {
+  // Fungsi untuk mengisi form saat tombol Edit diklik
+  function handleEditClick(item: RosterItem) {
+    setEditingId(item.id)
+    setTanggalSabtu(item.tanggal_sabtu || '')
+    setLiturgos(item.liturgos || '')
+    setUsherKolektan(item.usher_kolektan || '')
+    setDoaSyafaat(item.doa_syafaat || '')
+    setWarta(item.warta || '')
+    setMultimedia(item.multimedia || '')
+    setPendamping(item.pendamping || '')
+    setTimMusik(item.tim_musik || '')
+    setTimPiket(item.tim_piket || '')
+
+    // Scroll otomatis ke bagian atas form admin
+    window.scrollTo({ top: 200, behavior: 'smooth' })
+  }
+
+  // Membatalkan mode edit
+  function handleCancelEdit() {
+    setEditingId(null)
+    resetForm()
+  }
+
+  function resetForm() {
+    setTanggalSabtu('')
+    setLiturgos('')
+    setUsherKolektan('')
+    setDoaSyafaat('')
+    setWarta('')
+    setMultimedia('')
+    setPendamping('')
+    setTimMusik('')
+    setTimPiket('')
+  }
+
+  async function handleSimpanRoster(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!tanggalSabtu) {
       alert('Tanggal Sabtu harus diisi!')
@@ -113,37 +160,58 @@ export default function RosterPage() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.from('roster_penatalayanan').insert([
-        {
-          tanggal_sabtu: tanggalSabtu,
-          liturgos: liturgos,
-          usher_kolektan: usherKolektan,
-          doa_syafaat: doaSyafaat,
-          warta: warta,
-          multimedia: multimedia,
-          pendamping: pendamping,
-          tim_musik: timMusik,
-          tim_piket: timPiket
-        }
-      ])
+      if (editingId !== null) {
+        // Mode Update / Edit
+        const { error } = await supabase
+          .from('roster_penatalayanan')
+          .update({
+            tanggal_sabtu: tanggalSabtu,
+            liturgos: liturgos,
+            usher_kolektan: usherKolektan,
+            doa_syafaat: doaSyafaat,
+            warta: warta,
+            multimedia: multimedia,
+            pendamping: pendamping,
+            tim_musik: timMusik,
+            tim_piket: timPiket
+          })
+          .eq('id', editingId)
 
-      if (error) {
-        alert('Gagal menambah roster: ' + error.message)
+        if (error) {
+          alert('Gagal memperbarui roster: ' + error.message)
+        } else {
+          alert('Roster pelayanan berhasil diperbarui!')
+          setEditingId(null)
+          resetForm()
+          fetchRoster()
+        }
       } else {
-        alert('Roster pelayanan berhasil ditambahkan!')
-        setTanggalSabtu('')
-        setLiturgos('')
-        setUsherKolektan('')
-        setDoaSyafaat('')
-        setWarta('')
-        setMultimedia('')
-        setPendamping('')
-        setTimMusik('')
-        setTimPiket('')
-        fetchRoster()
+        // Mode Tambah Baru
+        const { error } = await supabase.from('roster_penatalayanan').insert([
+          {
+            tanggal_sabtu: tanggalSabtu,
+            liturgos: liturgos,
+            usher_kolektan: usherKolektan,
+            doa_syafaat: doaSyafaat,
+            warta: warta,
+            multimedia: multimedia,
+            pendamping: pendamping,
+            tim_musik: timMusik,
+            tim_piket: timPiket
+          }
+        ])
+
+        if (error) {
+          alert('Gagal menambah roster: ' + error.message)
+        } else {
+          alert('Roster pelayanan berhasil ditambahkan!')
+          resetForm()
+          fetchRoster()
+        }
       }
-    } catch (err: any) {
-      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      alert('Terjadi kesalahan sistem: ' + errorMessage)
     } finally {
       setLoading(false)
     }
@@ -157,14 +225,18 @@ export default function RosterPage() {
       if (error) {
         alert('Gagal menghapus: ' + error.message)
       } else {
+        if (editingId === id) {
+          handleCancelEdit()
+        }
         fetchRoster()
       }
-    } catch (err: any) {
-      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      alert('Terjadi kesalahan sistem: ' + errorMessage)
     }
   }
 
-  const filteredRoster = rosterList.filter((item: any) => {
+  const filteredRoster = rosterList.filter((item: RosterItem) => {
     const q = searchTerm.toLowerCase()
     return (
       item.tanggal_sabtu?.toLowerCase().includes(q) ||
@@ -179,7 +251,6 @@ export default function RosterPage() {
     )
   })
 
-  // Helper format tanggal biar lebih enak dibaca (sama seperti halaman Tema)
   function formatTanggal(tgl: string) {
     try {
       const d = new Date(tgl)
@@ -220,21 +291,33 @@ export default function RosterPage() {
         )}
       </div>
 
-      {/* FORM TAMBAH ROSTER - HANYA MUNCUL JIKA ADMIN AKTIF */}
+      {/* FORM TAMBAH / EDIT ROSTER - HANYA MUNCUL JIKA ADMIN AKTIF */}
       {isAdmin && (
         <div className="reveal delay-1 tilt-card card-glass p-6 rounded-2xl space-y-4">
-          <div className="space-y-1">
-            <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-              Form Admin
-            </span>
-            <h2
-              className="text-xl font-bold text-gray-800 mt-1"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              ➕ Tambah Roster Pelayanan Baru
-            </h2>
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                Form Admin
+              </span>
+              <h2
+                className="text-xl font-bold text-gray-800 mt-1"
+                style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              >
+                {editingId !== null ? '✏️ Edit Roster Pelayanan' : '➕ Tambah Roster Pelayanan Baru'}
+              </h2>
+            </div>
+            {editingId !== null && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-xs font-semibold text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition"
+              >
+                Batal Edit
+              </button>
+            )}
           </div>
-          <form onSubmit={handleTambahRoster} className="space-y-4">
+
+          <form onSubmit={handleSimpanRoster} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Tanggal Sabtu</label>
@@ -326,13 +409,22 @@ export default function RosterPage() {
                 />
               </div>
             </div>
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-2 pt-2">
+              {editingId !== null && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-sm font-semibold px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                >
+                  Batal
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={loading}
                 className="btn-gold text-sm font-bold px-6 py-2.5 rounded-lg disabled:opacity-60"
               >
-                {loading ? 'Menyimpan...' : 'Simpan Roster Pelayanan'}
+                {loading ? 'Menyimpan...' : editingId !== null ? 'Perbarui Roster' : 'Simpan Roster Pelayanan'}
               </button>
             </div>
           </form>
@@ -379,11 +471,15 @@ export default function RosterPage() {
           )}
         </div>
 
-        {/* List Roster - desain kartu seperti halaman Tema */}
+        {/* List Roster */}
         {filteredRoster.length > 0 ? (
           <div className="space-y-4">
-            {filteredRoster.map((item: any, idx: number) => (
-              <div key={item.id} className="jadwal-card reveal" style={{ animationDelay: `${0.03 * idx}s` }}>
+            {filteredRoster.map((item: RosterItem, idx: number) => (
+              <div
+                key={item.id}
+                className={`jadwal-card reveal ${editingId === item.id ? 'ring-2 ring-amber-500' : ''}`}
+                style={{ animationDelay: `${0.03 * idx}s` }}
+              >
                 <div className="jadwal-card-accent" />
                 <div className="jadwal-card-body">
                   <div className="flex items-start justify-between gap-3">
@@ -394,12 +490,20 @@ export default function RosterPage() {
                       </span>
                     </div>
                     {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition shrink-0"
-                      >
-                        🗑️ Hapus
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleEditClick(item)}
+                          className="text-xs text-amber-800 border border-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-400 transition"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition"
+                        >
+                          🗑️ Hapus
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -512,7 +616,6 @@ export default function RosterPage() {
           box-shadow: 0 0 0 3px rgba(212,175,55,.2);
         }
 
-        /* ===== Kartu Roster (sama seperti kartu Tema) ===== */
         .jadwal-card {
           position: relative;
           display: flex;
@@ -547,7 +650,6 @@ export default function RosterPage() {
           background: linear-gradient(90deg, rgba(212,175,55,.35), rgba(212,175,55,0));
         }
 
-        /* Grid petugas roster */
         .petugas-grid {
           display: grid;
           grid-template-columns: repeat(1, minmax(0, 1fr));

@@ -7,9 +7,12 @@ export default function TemaPage() {
   const [jadwalList, setJadwalList] = useState<any>([])
   const [tanggalSabtu, setTanggalSabtu] = useState<any>('')
   const [tema, setTema] = useState<any>('')
-  const [tujuan, setTujuan] = useState<any>('')
+  const [pembicara, setPembicara] = useState<any>('')
   const [loading, setLoading] = useState<any>(false)
   const [searchTerm, setSearchTerm] = useState<any>('')
+  
+  // State tambahan untuk mode edit
+  const [editId, setEditId] = useState<any>(null)
 
   // Cek status admin dari localStorage saat halaman dimuat
   useEffect(() => {
@@ -20,13 +23,9 @@ export default function TemaPage() {
 
     checkAdmin()
 
-    // Event listener untuk mendeteksi perubahan login di tab/navigasi yang sama
     window.addEventListener('storage', checkAdmin)
-
-    // Interval pendek untuk memastikan sinkronisasi langsung saat login dari navbar
     const interval = setInterval(checkAdmin, 500)
 
-    // Bersihkan jadwal tema bulan-bulan sebelumnya (maksimal 1x per bulan), lalu ambil data terbaru
     bersihkanTemaBulanLalu().finally(() => {
       fetchJadwal()
     })
@@ -37,24 +36,20 @@ export default function TemaPage() {
     }
   }, [])
 
-  // Tanggal awal bulan berjalan, format YYYY-MM-01
   function getAwalBulanIni(): string {
     const now = new Date()
     const awal = new Date(now.getFullYear(), now.getMonth(), 1)
     return awal.toISOString().split('T')[0]
   }
 
-  // Hapus semua jadwal tema dengan tanggal_sabtu sebelum awal bulan ini.
-  // Hanya dijalankan sekali per bulan (ditandai lewat localStorage) supaya tidak
-  // memanggil delete berulang-ulang setiap kali halaman dibuka.
   async function bersihkanTemaBulanLalu(paksa: boolean = false) {
-    const bulanIni = new Date().toISOString().slice(0, 7) // format YYYY-MM
+    const bulanIni = new Date().toISOString().slice(0, 7)
 
     try {
       if (!paksa) {
         const bulanTerakhirDibersihkan = localStorage.getItem('temaCleanupBulan')
         if (bulanTerakhirDibersihkan === bulanIni) {
-          return // sudah pernah dibersihkan bulan ini, tidak perlu diulang
+          return
         }
       }
 
@@ -89,29 +84,68 @@ export default function TemaPage() {
     if (data) setJadwalList(data)
   }
 
-  async function handleTambahTema(e: any) {
+  // Fungsi Simpan (Bisa untuk Tambah Baru atau Update Edit)
+  async function handleSubmit(e: any) {
     e.preventDefault()
-    if (!tanggalSabtu || !tema || !tujuan) {
-      alert('Semua field harus diisi!')
+    if (!tanggalSabtu || !tema || !pembicara) {
+      alert('Semua field (Tanggal, Tema, dan Pelayan Firman) harus diisi!')
       return
     }
 
     setLoading(true)
-    const { error } = await supabase.from('jadwal_tema').insert([
-      { tanggal_sabtu: tanggalSabtu, tema, tujuan }
-    ])
 
-    setLoading(false)
+    if (editId) {
+      // Proses Update / Edit Data
+      const { error } = await supabase
+        .from('jadwal_tema')
+        .update({ tanggal_sabtu: tanggalSabtu, tema, pembicara })
+        .eq('id', editId)
 
-    if (error) {
-      alert('Gagal menambah jadwal: ' + error.message)
+      setLoading(false)
+
+      if (error) {
+        alert('Gagal mengupdate jadwal: ' + error.message)
+      } else {
+        alert('Jadwal tema berhasil diperbarui!')
+        batalEdit()
+        fetchJadwal()
+      }
     } else {
-      alert('Jadwal tema berhasil ditambahkan!')
-      setTanggalSabtu('')
-      setTema('')
-      setTujuan('')
-      fetchJadwal()
+      // Proses Tambah Baru
+      const { error } = await supabase.from('jadwal_tema').insert([
+        { tanggal_sabtu: tanggalSabtu, tema, pembicara }
+      ])
+
+      setLoading(false)
+
+      if (error) {
+        alert('Gagal menambah jadwal: ' + error.message)
+      } else {
+        alert('Jadwal tema berhasil ditambahkan!')
+        setTanggalSabtu('')
+        setTema('')
+        setPembicara('')
+        fetchJadwal()
+      }
     }
+  }
+
+  // Fungsi untuk mengisi form saat tombol edit diklik
+  function handleEditClick(item: any) {
+    setEditId(item.id)
+    setTanggalSabtu(item.tanggal_sabtu)
+    setTema(item.tema)
+    setPembicara(item.pembicara || '')
+    // Gulir otomatis ke form di atas agar mudah dilihat (khusus tampilan mobile)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Membatalkan mode edit dan mereset form
+  function batalEdit() {
+    setEditId(null)
+    setTanggalSabtu('')
+    setTema('')
+    setPembicara('')
   }
 
   async function handleDelete(id: any) {
@@ -120,16 +154,18 @@ export default function TemaPage() {
     if (error) {
       alert('Gagal menghapus: ' + error.message)
     } else {
+      // Jika yang sedang dihapus kebetulan sedang dalam mode edit, reset formnya
+      if (editId === id) batalEdit()
       fetchJadwal()
     }
   }
 
   const filteredJadwal = jadwalList.filter((item: any) =>
     item.tema.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.tanggal_sabtu.toLowerCase().includes(searchTerm.toLowerCase())
+    item.tanggal_sabtu.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.pembicara && item.pembicara.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
-  // Helper untuk format tanggal jadi lebih enak dibaca (opsional, fallback ke string asli jika gagal)
   function formatTanggal(tgl: string) {
     try {
       const d = new Date(tgl)
@@ -156,7 +192,7 @@ export default function TemaPage() {
             >
               Jadwal & Tema Ibadah Remaja
             </h1>
-            <p className="text-gray-500 text-sm">Daftar tema dan tujuan firman Tuhan untuk ibadah remaja setiap hari Sabtu.</p>
+            <p className="text-gray-500 text-sm">Daftar tema firman Tuhan dan pembicara untuk ibadah remaja setiap hari Sabtu.</p>
             <p className="text-[11px] text-amber-700/70 italic mt-0.5">🗑️ Jadwal tema bulan-bulan sebelumnya otomatis dihapus setiap awal bulan.</p>
           </div>
         </div>
@@ -173,21 +209,33 @@ export default function TemaPage() {
       {/* Grid: Form & Daftar Jadwal */}
       <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-3' : ''} gap-6`}>
 
-        {/* Kotak Form Tambah Tema - HANYA MUNCUL JIKA ADMIN AKTIF */}
+        {/* Kotak Form Tambah / Edit Tema - HANYA MUNCUL JIKA ADMIN AKTIF */}
         {isAdmin && (
           <div className="reveal delay-1 tilt-card card-glass p-6 rounded-2xl space-y-4 md:col-span-1">
-            <div className="space-y-1">
-              <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                Form Admin
-              </span>
-              <h2
-                className="text-xl font-bold text-gray-800 mt-1"
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-              >
-                ➕ Tambah Jadwal & Tema
-              </h2>
+            <div className="space-y-1 flex justify-between items-start">
+              <div>
+                <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                  {editId ? 'Mode Edit' : 'Form Admin'}
+                </span>
+                <h2
+                  className="text-xl font-bold text-gray-800 mt-1"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                >
+                  {editId ? '✏️ Edit Jadwal & Tema' : '➕ Tambah Jadwal & Tema'}
+                </h2>
+              </div>
+              {editId && (
+                <button
+                  type="button"
+                  onClick={batalEdit}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline mt-1"
+                >
+                  Batal
+                </button>
+              )}
             </div>
-            <form onSubmit={handleTambahTema} className="space-y-3">
+
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Tanggal Sabtu</label>
                 <input
@@ -208,22 +256,34 @@ export default function TemaPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tujuan / Poin Firman</label>
-                <textarea
-                  rows={3}
-                  placeholder="Contoh: Remaja belajar taat..."
+                <label className="block text-xs font-medium text-gray-700 mb-1">Nama Pelayan Firman</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Pnt. Surya"
                   className="w-full p-2.5 rounded-lg text-sm input-gold"
-                  value={tujuan}
-                  onChange={(e) => setTujuan(e.target.value)}
+                  value={pembicara}
+                  onChange={(e) => setPembicara(e.target.value)}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60"
-              >
-                {loading ? 'Menyimpan...' : 'Simpan Jadwal Tema'}
-              </button>
+
+              <div className="flex gap-2 pt-1">
+                {editId && (
+                  <button
+                    type="button"
+                    onClick={batalEdit}
+                    className="w-1/3 bg-gray-200 text-gray-700 py-2.5 rounded-lg text-sm font-bold hover:bg-gray-300 transition"
+                  >
+                    Batal
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`${editId ? 'w-2/3' : 'w-full'} btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60`}
+                >
+                  {loading ? 'Menyimpan...' : editId ? 'Perbarui Jadwal' : 'Simpan Jadwal Tema'}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -239,7 +299,7 @@ export default function TemaPage() {
                 className="text-xl font-bold text-gray-800 mt-1"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
-                📅 Daftar Jadwal Tema
+                📅 Daftar Jadwal Tema & Pelayan Firman
               </h2>
             </div>
             <span className="btn-gold text-xs font-semibold px-3 py-1.5 rounded-lg">
@@ -252,7 +312,7 @@ export default function TemaPage() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-700/50 text-sm">🔍</span>
             <input
               type="text"
-              placeholder="Cari tema atau tanggal..."
+              placeholder="Cari tema, pembicara, atau tanggal..."
               className="w-full pl-9 pr-9 p-2.5 rounded-lg text-sm input-gold"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -272,7 +332,11 @@ export default function TemaPage() {
           {filteredJadwal.length > 0 ? (
             <div className="space-y-4">
               {filteredJadwal.map((item: any, idx: number) => (
-                <div key={item.id} className="jadwal-card reveal" style={{ animationDelay: `${0.03 * idx}s` }}>
+                <div 
+                  key={item.id} 
+                  className={`jadwal-card reveal ${editId === item.id ? 'ring-2 ring-amber-500 shadow-md' : ''}`} 
+                  style={{ animationDelay: `${0.03 * idx}s` }}
+                >
                   <div className="jadwal-card-accent" />
                   <div className="jadwal-card-body">
                     <div className="flex items-start justify-between gap-3">
@@ -283,12 +347,20 @@ export default function TemaPage() {
                         </span>
                       </div>
                       {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition shrink-0"
-                        >
-                          🗑️ Hapus
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleEditClick(item)}
+                            className="text-xs text-amber-700 border border-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-50 hover:border-amber-400 transition"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="text-xs text-rose-600 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition"
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -296,12 +368,13 @@ export default function TemaPage() {
                       "{item.tema}"
                     </h3>
 
-                    <div className="jadwal-divider" />
-
-                    <p className="jadwal-tujuan">
-                      <span className="jadwal-tujuan-label">Tujuan</span>
-                      {item.tujuan}
-                    </p>
+                    {/* Menampilkan Nama Pembicara */}
+                    <div className="mt-2.5 flex items-center gap-1.5 text-xs text-gray-600 font-medium">
+                      <span className="text-amber-700">Pelayan Firman:</span>
+                      <span className="bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200/60">
+                        {item.pembicara || 'Belum ditentukan'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -353,7 +426,6 @@ export default function TemaPage() {
           box-shadow: 0 0 0 3px rgba(212,175,55,.2);
         }
 
-        /* ===== Kartu Jadwal Tema (baru) ===== */
         .jadwal-card {
           position: relative;
           display: flex;
@@ -389,25 +461,6 @@ export default function TemaPage() {
           color: #241246;
           font-family: 'Cormorant Garamond', serif;
           line-height: 1.35;
-        }
-        .jadwal-divider {
-          margin: 10px 0;
-          height: 1px;
-          background: linear-gradient(90deg, rgba(212,175,55,.35), rgba(212,175,55,0));
-        }
-        .jadwal-tujuan {
-          font-size: .82rem;
-          line-height: 1.6;
-          color: #4b5563;
-        }
-        .jadwal-tujuan-label {
-          display: inline-block;
-          font-weight: 700;
-          color: #6B4FBB;
-          margin-right: 6px;
-          text-transform: uppercase;
-          font-size: .68rem;
-          letter-spacing: .04em;
         }
 
         .tilt-card {

@@ -70,6 +70,11 @@ export default function LaguPage() {
   const [searchLagu, setSearchLagu] = useState<string>('')
   const [selectedLagu, setSelectedLagu] = useState<Lagu | null>(null)
 
+  // ==== State untuk edit lagu tersimpan ====
+  const [editMode, setEditMode] = useState<boolean>(false)
+  const [editForm, setEditForm] = useState<NewLaguState>({ judul_lagu: '', lirik: '' })
+  const [savingEdit, setSavingEdit] = useState<boolean>(false)
+
   // ==== State untuk pagination daftar lagu tersimpan ====
   const [currentPage, setCurrentPage] = useState<number>(1)
   const ITEMS_PER_PAGE = 9
@@ -108,7 +113,7 @@ export default function LaguPage() {
   useEffect(() => {
     function handleEsc(e: KeyboardEvent | any) {
       if (e.key === 'Escape') {
-        setSelectedLagu(null)
+        handleCloseModal()
         setOpenSlot(null)
       }
     }
@@ -160,6 +165,26 @@ export default function LaguPage() {
     setNewLagu((prev) => ({ ...prev, lirik: updated }))
 
     // Kembalikan posisi kursor setelah teks yang baru saja ditempel
+    requestAnimationFrame(() => {
+      const newCursorPos = start + pastedText.length
+      textarea.selectionStart = newCursorPos
+      textarea.selectionEnd = newCursorPos
+    })
+  }
+
+  // Sama seperti handlePasteLirik, tapi untuk textarea lirik di form edit lagu.
+  function handlePasteLirikEdit(e: ClipboardEvent<HTMLTextAreaElement>) {
+    e.preventDefault()
+    const pastedText = e.clipboardData.getData('text/plain')
+    const textarea = e.target as HTMLTextAreaElement
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = editForm.lirik.substring(0, start)
+    const after = editForm.lirik.substring(end)
+    const updated = before + pastedText + after
+
+    setEditForm((prev) => ({ ...prev, lirik: updated }))
+
     requestAnimationFrame(() => {
       const newCursorPos = start + pastedText.length
       textarea.selectionStart = newCursorPos
@@ -271,6 +296,58 @@ export default function LaguPage() {
       alert('Terjadi kesalahan sistem: ' + (err?.message || err))
     } finally {
       setSavingPilihan(false)
+    }
+  }
+
+  // Buka modal lirik untuk lagu tertentu (mode lihat, bukan edit)
+  function handleOpenModal(lagu: Lagu) {
+    setSelectedLagu(lagu)
+    setEditMode(false)
+  }
+
+  // Tutup modal & keluar dari mode edit sekaligus
+  function handleCloseModal() {
+    setSelectedLagu(null)
+    setEditMode(false)
+  }
+
+  // Masuk ke mode edit untuk lagu yang sedang dibuka di modal
+  function handleMulaiEdit() {
+    if (!selectedLagu) return
+    setEditForm({ judul_lagu: selectedLagu.judul_lagu, lirik: selectedLagu.lirik })
+    setEditMode(true)
+  }
+
+  function handleBatalEdit() {
+    if (!selectedLagu) return
+    setEditForm({ judul_lagu: selectedLagu.judul_lagu, lirik: selectedLagu.lirik })
+    setEditMode(false)
+  }
+
+  // Simpan perubahan judul & lirik lagu yang sedang diedit
+  async function handleSimpanEditLagu(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!selectedLagu) return
+    setSavingEdit(true)
+    try {
+      const { error } = await supabase
+        .from('lagu')
+        .update({ judul_lagu: editForm.judul_lagu, lirik: editForm.lirik })
+        .eq('id', selectedLagu.id)
+
+      if (error) {
+        alert('Gagal menyimpan perubahan: ' + error.message)
+      } else {
+        const updatedLagu: Lagu = { ...selectedLagu, judul_lagu: editForm.judul_lagu, lirik: editForm.lirik }
+        setLaguList((prev) => prev.map((l) => (l.id === selectedLagu.id ? updatedLagu : l)))
+        setSelectedLagu(updatedLagu)
+        setEditMode(false)
+        alert('Lagu berhasil diperbarui!')
+      }
+    } catch (err: any) {
+      alert('Terjadi kesalahan sistem: ' + (err?.message || err))
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -432,7 +509,7 @@ export default function LaguPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={() => setSelectedLagu(laguTerpilih)}
+                          onClick={() => handleOpenModal(laguTerpilih)}
                           className="text-[10px] font-semibold text-amber-200 hover:text-amber-100 underline"
                         >
                           Lirik
@@ -547,7 +624,7 @@ export default function LaguPage() {
               {paginatedLaguList.map((l: Lagu) => (
                 <button
                   key={l.id}
-                  onClick={() => setSelectedLagu(l)}
+                  onClick={() => handleOpenModal(l)}
                   className="petugas-box p-3 rounded-lg text-xs text-left cursor-pointer"
                 >
                   <span className="font-semibold text-gray-800 block mb-1">🎵 {l.judul_lagu}</span>
@@ -606,40 +683,131 @@ export default function LaguPage() {
         )}
       </div>
 
-      {/* MODAL POP UP LIRIK LAGU */}
+      {/* MODAL POP UP LIRIK LAGU (LIHAT & EDIT) */}
       {selectedLagu && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(27,17,64,.55)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setSelectedLagu(null)}
+          onClick={handleCloseModal}
         >
           <div
             className="modal-pop card-glass rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto space-y-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-start gap-3">
-              <div>
-                <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                  Lirik Lagu
-                </span>
-                <h3
-                  className="text-xl font-bold text-gray-800 mt-2"
-                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                >
-                  🎵 {selectedLagu.judul_lagu}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedLagu(null)}
-                className="btn-gold text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                aria-label="Tutup"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {selectedLagu.lirik}
-            </p>
+            {editMode ? (
+              // ==== Mode Edit ====
+              <form onSubmit={handleSimpanEditLagu} className="space-y-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div>
+                    <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                      Edit Lagu
+                    </span>
+                    <h3
+                      className="text-xl font-bold text-gray-800 mt-2"
+                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                    >
+                      ✏️ Ubah Judul & Lirik
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="btn-gold text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    aria-label="Tutup"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5 mb-1.5">
+                    <span className="text-amber-600">🎼</span> Judul Lagu
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full p-2.5 rounded-lg text-sm input-gold"
+                    value={editForm.judul_lagu}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setEditForm((prev) => ({ ...prev, judul_lagu: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                      <span className="text-amber-600">📜</span> Lirik Lagu
+                    </label>
+                    <span className="text-[10px] text-gray-400">{editForm.lirik.length} karakter</span>
+                  </div>
+                  <textarea
+                    rows={10}
+                    required
+                    className="w-full p-3 rounded-lg text-sm input-gold lirik-textarea"
+                    value={editForm.lirik}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                      setEditForm((prev) => ({ ...prev, lirik: e.target.value }))
+                    }
+                    onPaste={handlePasteLirikEdit}
+                  />
+                </div>
+
+                <div className="flex gap-2.5 pt-1">
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60"
+                  >
+                    {savingEdit ? 'Menyimpan...' : '💾 Simpan Perubahan'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBatalEdit}
+                    disabled={savingEdit}
+                    className="text-xs font-semibold text-rose-600 border border-rose-300 px-4 py-2.5 rounded-lg hover:bg-rose-50 hover:border-rose-400 transition disabled:opacity-60"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // ==== Mode Lihat ====
+              <>
+                <div className="flex justify-between items-start gap-3">
+                  <div>
+                    <span className="badge-soft text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                      Lirik Lagu
+                    </span>
+                    <h3
+                      className="text-xl font-bold text-gray-800 mt-2"
+                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                    >
+                      🎵 {selectedLagu.judul_lagu}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={handleMulaiEdit}
+                      className="text-xs font-bold px-3 py-2 rounded-full pagination-btn"
+                      aria-label="Edit lagu"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={handleCloseModal}
+                      className="btn-gold text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                      aria-label="Tutup"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedLagu.lirik}
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}

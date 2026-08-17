@@ -12,7 +12,7 @@ interface JadwalTemaItem {
   id: number | string
   tanggal_sabtu: string
   tema: string
-  tujuan: string
+  pembicara?: string // Ditambahkan
 }
 
 interface RosterItem {
@@ -114,6 +114,7 @@ export default function DashboardPage() {
   }
 
   async function fetchJadwalTema() {
+    // Pastikan kolom pembicara ada di database
     const { data } = await supabase.from('jadwal_tema').select('*').order('tanggal_sabtu', { ascending: true })
     if (data) setJadwalTemaList(data)
   }
@@ -249,7 +250,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. TEMA SABTU YANG AKAN DATANG (Otomatis) */}
+      {/* 3. TEMA SABTU YANG AKAN DATANG */}
       <div className="reveal delay-3 tilt-card text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4"
         style={{ background: 'linear-gradient(135deg, #3A2472, #6B3FA0 60%, #8347B0)' }}
       >
@@ -259,7 +260,7 @@ export default function DashboardPage() {
           {temaSabtuIni ? (
             <div className="space-y-1 mt-2">
               <p className="text-sm font-semibold text-amber-200">Tema: "{temaSabtuIni.tema}"</p>
-              <p className="text-xs text-purple-100"><b>Tujuan:</b> {temaSabtuIni.tujuan}</p>
+              <p className="text-xs text-amber-100">Pembicara: {temaSabtuIni.pembicara || '-'}</p>
             </div>
           ) : (
             <p className="text-xs text-purple-200 italic mt-2">
@@ -365,133 +366,32 @@ export default function DashboardPage() {
       </div>
 
       <style jsx global>{`
-        .card-glass {
-          background: rgba(255,255,255,.85);
-          border: 1px solid rgba(212,175,55,.25);
-          box-shadow: 0 8px 24px rgba(90,60,150,.08);
-        }
-
-        .badge-gold {
-          color: #241246;
-          background: linear-gradient(135deg, #FCE38A, #F4D35E 45%, #E0A93A);
-        }
-        .badge-soft {
-          color: #6B4FBB;
-          background: #F1EBFB;
-        }
-
-        .btn-gold {
-          color: #241246;
-          background: linear-gradient(135deg, #FCE38A, #F4D35E 45%, #E0A93A);
-          box-shadow: 0 2px 10px rgba(233,180,76,.4);
-          transition: transform .18s ease, box-shadow .18s ease;
-        }
-        .btn-gold:hover {
-          transform: translateY(-1px) scale(1.03);
-          box-shadow: 0 6px 16px rgba(233,180,76,.5);
-        }
-
-        .link-gold {
-          color: #B4862F;
-        }
-        .link-gold:hover {
-          color: #8A6420;
-        }
-
-        .digit-box {
-          background: rgba(255,255,255,.08);
-          backdrop-filter: blur(6px);
-          border: 1px solid rgba(244,211,94,.25);
-          transition: transform .15s ease;
-        }
+        /* (Style Anda tetap sama seperti sebelumnya) */
+        .card-glass { background: rgba(255,255,255,.85); border: 1px solid rgba(212,175,55,.25); box-shadow: 0 8px 24px rgba(90,60,150,.08); }
+        .badge-gold { color: #241246; background: linear-gradient(135deg, #FCE38A, #F4D35E 45%, #E0A93A); }
+        .badge-soft { color: #6B4FBB; background: #F1EBFB; }
+        .btn-gold { color: #241246; background: linear-gradient(135deg, #FCE38A, #F4D35E 45%, #E0A93A); box-shadow: 0 2px 10px rgba(233,180,76,.4); transition: transform .18s ease, box-shadow .18s ease; }
+        .btn-gold:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 6px 16px rgba(233,180,76,.5); }
+        .link-gold { color: #B4862F; }
+        .link-gold:hover { color: #8A6420; }
+        .digit-box { background: rgba(255,255,255,.08); backdrop-filter: blur(6px); border: 1px solid rgba(244,211,94,.25); transition: transform .15s ease; }
         .digit-box:hover { transform: translateY(-2px); }
-        .digit-num {
-          color: #F4D35E;
-          display: inline-block;
-          animation: digitPop .5s ease;
-        }
-        @keyframes digitPop {
-          0% { transform: translateY(-4px); opacity: .4; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-
-        .petugas-box {
-          background: #FBF6EA;
-          border: 1px solid rgba(212,175,55,.25);
-          transition: transform .15s ease, box-shadow .15s ease;
-        }
-        .petugas-box:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 14px rgba(180,134,47,.15);
-        }
-
-        .tilt-card {
-          transition: transform .25s ease, box-shadow .25s ease;
-        }
-        .tilt-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 16px 32px rgba(60,30,110,.25);
-        }
-
-        .star {
-          position: absolute;
-          width: 3px;
-          height: 3px;
-          border-radius: 9999px;
-          background: #F4D35E;
-          box-shadow: 0 0 6px 1px #F4D35E;
-          animation: twinkleDash 2.6s ease-in-out infinite;
-        }
-        @keyframes twinkleDash {
-          0%, 100% { opacity: .15; transform: scale(.8); }
-          50% { opacity: 1; transform: scale(1.3); }
-        }
-
-        .shimmer-line-abs {
-          position: absolute;
-          left: 0; right: 0; bottom: 0;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, #F4D35E, #FFF3C4, #F4D35E, transparent);
-          background-size: 200% 100%;
-          animation: shimmerDash 3.5s linear infinite;
-        }
-        @keyframes shimmerDash {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-
-        .confetti {
-          position: absolute;
-          top: -10%;
-          font-size: 16px;
-          opacity: .85;
-          animation: confettiFall 4.5s linear infinite;
-        }
-        @keyframes confettiFall {
-          0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
-          10% { opacity: .9; }
-          100% { transform: translateY(140px) rotate(200deg); opacity: 0; }
-        }
-
-        .reveal {
-          animation: fadeUpDash .5s ease both;
-        }
-        .delay-1 { animation-delay: .05s; }
-        .delay-2 { animation-delay: .1s; }
-        .delay-3 { animation-delay: .15s; }
-        .delay-4 { animation-delay: .18s; }
-        .delay-5 { animation-delay: .22s; }
-        @keyframes fadeUpDash {
-          0% { opacity: 0; transform: translateY(14px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .star, .shimmer-line-abs, .confetti, .digit-num, .reveal, .tilt-card, .digit-box, .petugas-box, .btn-gold {
-            animation: none !important;
-            transition: none !important;
-          }
-        }
+        .digit-num { color: #F4D35E; display: inline-block; animation: digitPop .5s ease; }
+        @keyframes digitPop { 0% { transform: translateY(-4px); opacity: .4; } 100% { transform: translateY(0); opacity: 1; } }
+        .petugas-box { background: #FBF6EA; border: 1px solid rgba(212,175,55,.25); transition: transform .15s ease, box-shadow .15s ease; }
+        .petugas-box:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(180,134,47,.15); }
+        .tilt-card { transition: transform .25s ease, box-shadow .25s ease; }
+        .tilt-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(60,30,110,.25); }
+        .star { position: absolute; width: 3px; height: 3px; border-radius: 9999px; background: #F4D35E; box-shadow: 0 0 6px 1px #F4D35E; animation: twinkleDash 2.6s ease-in-out infinite; }
+        @keyframes twinkleDash { 0%, 100% { opacity: .15; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.3); } }
+        .shimmer-line-abs { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, #F4D35E, #FFF3C4, #F4D35E, transparent); background-size: 200% 100%; animation: shimmerDash 3.5s linear infinite; }
+        @keyframes shimmerDash { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .confetti { position: absolute; top: -10%; font-size: 16px; opacity: .85; animation: confettiFall 4.5s linear infinite; }
+        @keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 0; } 10% { opacity: .9; } 100% { transform: translateY(140px) rotate(200deg); opacity: 0; } }
+        .reveal { animation: fadeUpDash .5s ease both; }
+        .delay-1 { animation-delay: .05s; } .delay-2 { animation-delay: .1s; } .delay-3 { animation-delay: .15s; } .delay-4 { animation-delay: .18s; } .delay-5 { animation-delay: .22s; }
+        @keyframes fadeUpDash { 0% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { .star, .shimmer-line-abs, .confetti, .digit-num, .reveal, .tilt-card, .digit-box, .petugas-box, .btn-gold { animation: none !important; transition: none !important; } }
       `}</style>
     </main>
   )
