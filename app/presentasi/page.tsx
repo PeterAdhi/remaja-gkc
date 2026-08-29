@@ -16,17 +16,25 @@ interface LyricLayout {
   sizeClass: string
 }
 
-function getLyricLayout(content: string): LyricLayout {
+// Ditambahkan parameter `isFullscreen` agar ukuran font lirik bisa diperbesar
+// secara otomatis saat sedang dalam mode presentasi (fullscreen).
+function getLyricLayout(content: string, isFullscreen: boolean): LyricLayout {
   const lines = content.split('\n')
   const nonEmptyCount = lines.filter((l) => l.trim() !== '').length
 
-  // Ukuran font diperbesar agar lebih mudah dibaca
-  const sizeClass =
-    nonEmptyCount <= 8
-      ? 'text-2xl md:text-3xl leading-relaxed'
+  // Ukuran font diperbesar agar lebih mudah dibaca.
+  // Saat fullscreen (mode presentasi), semua tingkatan ukuran dinaikkan lagi.
+  const sizeClass = isFullscreen
+    ? nonEmptyCount <= 8
+      ? 'text-4xl md:text-6xl leading-relaxed'
       : nonEmptyCount <= 16
-      ? 'text-xl md:text-2xl leading-relaxed'
-      : 'text-lg md:text-xl leading-snug'
+      ? 'text-3xl md:text-5xl leading-relaxed'
+      : 'text-2xl md:text-4xl leading-snug'
+    : nonEmptyCount <= 8
+    ? 'text-2xl md:text-3xl leading-relaxed'
+    : nonEmptyCount <= 16
+    ? 'text-xl md:text-2xl leading-relaxed'
+    : 'text-lg md:text-xl leading-snug'
 
   // Selalu kembalikan 1 kolom saja
   return {
@@ -352,6 +360,7 @@ export default function PresentasiPage() {
   }
 
   const slide = slides[currentSlide] || { title: '', subtitle: '', content: '' }
+  const lyricLayoutForSlide = slide.content ? getLyricLayout(slide.content, isFullscreen) : null
 
   return (
     <div
@@ -446,19 +455,30 @@ export default function PresentasiPage() {
         </div>
       )}
 
-      <div className="max-w-4xl w-full mx-auto my-auto py-8 relative z-10 text-center overflow-hidden">
+      <div
+        className={`w-full mx-auto my-auto py-8 relative z-10 text-center overflow-hidden transition-[max-width] duration-300 ${
+          isFullscreen ? 'max-w-6xl' : 'max-w-4xl'
+        }`}
+      >
         <div
           key={currentSlide}
           className={`space-y-5 ${direction === 'next' ? 'slide-in-next' : 'slide-in-prev'}`}
         >
           <div className="space-y-2.5">
             {slide.subtitle && (
-              <span className="text-[11px] md:text-xs text-amber-300/85 font-semibold tracking-[0.32em] block uppercase fade-item ui-sans" style={{ animationDelay: '.05s' }}>
+              <span
+                className={`text-amber-300/85 font-semibold tracking-[0.32em] block uppercase fade-item ui-sans ${
+                  isFullscreen ? 'text-sm md:text-lg' : 'text-[11px] md:text-xs'
+                }`}
+                style={{ animationDelay: '.05s' }}
+              >
                 {slide.subtitle}
               </span>
             )}
             <h2
-              className="text-3xl md:text-5xl font-semibold gold-foil-text tracking-tight leading-[1.15] fade-item px-2"
+              className={`font-semibold gold-foil-text tracking-tight leading-[1.15] fade-item px-2 ${
+                isFullscreen ? 'text-5xl md:text-7xl lg:text-8xl' : 'text-3xl md:text-5xl'
+              }`}
               style={{ fontFamily: "'Cormorant Garamond', serif", animationDelay: '.12s' }}
             >
               {slide.title}
@@ -470,31 +490,30 @@ export default function PresentasiPage() {
             </div>
           </div>
 
-          {slide.content && (() => {
-            const lyricLayout = getLyricLayout(slide.content)
-            return (
-              <div
-                className="relative mx-auto p-7 md:p-9 fade-item gilded-card max-w-3xl"
-                style={{ animationDelay: '.22s' }}
-              >
-                <CornerOrnament className="corner-tl" />
-                <CornerOrnament className="corner-tr" />
-                <CornerOrnament className="corner-bl" />
-                <CornerOrnament className="corner-br" />
-                <div className="lyric-scroll max-h-[48vh] md:max-h-[54vh] overflow-y-auto pr-1">
-                  {lyricLayout.columns.map((col, i) => (
-                    <p
-                      key={i}
-                      className={`text-amber-50/95 whitespace-pre-line text-center ${lyricLayout.sizeClass}`}
-                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                    >
-                      {col}
-                    </p>
-                  ))}
-                </div>
+          {slide.content && lyricLayoutForSlide && (
+            <div
+              className={`relative mx-auto p-7 md:p-9 fade-item gilded-card ${
+                isFullscreen ? 'max-w-5xl' : 'max-w-3xl'
+              }`}
+              style={{ animationDelay: '.22s' }}
+            >
+              <CornerOrnament className="corner-tl" />
+              <CornerOrnament className="corner-tr" />
+              <CornerOrnament className="corner-bl" />
+              <CornerOrnament className="corner-br" />
+              <div className="lyric-scroll max-h-[48vh] md:max-h-[54vh] overflow-y-auto pr-1">
+                {lyricLayoutForSlide.columns.map((col, i) => (
+                  <p
+                    key={i}
+                    className={`text-amber-50/95 whitespace-pre-line text-center ${lyricLayoutForSlide.sizeClass}`}
+                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  >
+                    {col}
+                  </p>
+                ))}
               </div>
-            )
-          })()}
+            </div>
+          )}
         </div>
       </div>
 
