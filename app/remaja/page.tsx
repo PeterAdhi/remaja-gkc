@@ -8,6 +8,7 @@ interface Remaja {
   alamat: string
   asal_sekolah: string
   tanggal_lahir: string
+  no_telp: string
 }
 
 interface FormDataState {
@@ -15,6 +16,7 @@ interface FormDataState {
   alamat: string
   asal_sekolah: string
   tanggal_lahir: string
+  no_telp: string
 }
 
 function formatTanggal(tanggal: string): string {
@@ -27,7 +29,6 @@ function formatTanggal(tanggal: string): string {
   return `${dd}-${mm}-${year}`
 }
 
-// Avatar unik & lucu berdasarkan nama, konsisten tiap dibuka (pakai DiceBear "fun-emoji")
 function getAvatarUrl(nama: string): string {
   const seed = encodeURIComponent(nama.trim().toLowerCase() || 'anon')
   return `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${seed}&backgroundType=gradientLinear`
@@ -38,13 +39,13 @@ export default function RemajaPage() {
     nama_lengkap: '',
     alamat: '',
     asal_sekolah: '',
-    tanggal_lahir: ''
+    tanggal_lahir: '',
+    no_telp: ''
   })
   const [remajaList, setRemajaList] = useState<Remaja[]>([])
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [loadingRemaja, setLoadingRemaja] = useState<boolean>(false)
 
-  // --- State untuk cek status admin (skema sama seperti RosterPage: localStorage 'isAdminRemaja') ---
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
 
   useEffect(() => {
@@ -67,8 +68,6 @@ export default function RemajaPage() {
     }
   }, [])
 
-  // Data remaja HANYA diambil kalau isAdmin true, supaya user biasa
-  // tidak ikut mengunduh data (nama, alamat, tgl lahir) ke browser mereka.
   useEffect(() => {
     if (isAdmin) {
       fetchRemaja()
@@ -99,7 +98,7 @@ export default function RemajaPage() {
         alert('Gagal: ' + error.message)
       } else {
         alert('Data diri berhasil disimpan!')
-        setFormData({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '' })
+        setFormData({ nama_lengkap: '', alamat: '', asal_sekolah: '', tanggal_lahir: '', no_telp: '' })
         if (isAdmin) fetchRemaja()
       }
     } catch (err: any) {
@@ -115,8 +114,6 @@ export default function RemajaPage() {
 
   return (
     <main className="max-w-7xl mx-auto p-5 md:p-12 space-y-7">
-
-      {/* Header */}
       <div className="reveal card-glass p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl">📝</span>
@@ -135,10 +132,7 @@ export default function RemajaPage() {
         </div>
       </div>
 
-      {/* Grid: Form & (khusus admin) Daftar Remaja */}
       <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-3' : ''}`}>
-
-        {/* Kotak Form Pendataan */}
         <div
           className={`reveal delay-1 tilt-card card-glass p-6 rounded-2xl space-y-4 ${
             isAdmin ? 'md:col-span-1' : 'md:max-w-md md:mx-auto w-full'
@@ -180,6 +174,14 @@ export default function RemajaPage() {
               value={formData.asal_sekolah}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, asal_sekolah: e.target.value })}
             />
+            <input
+              type="tel"
+              placeholder="Nomor Telepon / WhatsApp"
+              required
+              className="w-full p-2.5 rounded-lg text-sm input-gold"
+              value={formData.no_telp}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, no_telp: e.target.value })}
+            />
             <div className="space-y-1">
               <label htmlFor="tanggal_lahir" className="block text-xs font-semibold text-amber-800/70">
                 🎂 Tanggal Lahir (Ulang Tahun)
@@ -204,7 +206,6 @@ export default function RemajaPage() {
           </form>
         </div>
 
-        {/* Kotak Daftar Remaja — hanya dirender sama sekali kalau admin */}
         {isAdmin && (
           <div className="reveal delay-2 card-glass p-6 rounded-2xl space-y-4 md:col-span-2">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -224,7 +225,6 @@ export default function RemajaPage() {
               </span>
             </div>
 
-            {/* Search Bar */}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-700/50 text-sm">🔍</span>
               <input
@@ -245,7 +245,6 @@ export default function RemajaPage() {
               )}
             </div>
 
-            {/* Tabel Data Remaja */}
             <div className="overflow-x-auto rounded-xl table-shell">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -253,6 +252,7 @@ export default function RemajaPage() {
                     <th className="p-3">Nama</th>
                     <th className="p-3">Alamat</th>
                     <th className="p-3">Sekolah</th>
+                    <th className="p-3">No. Telp</th>
                     <th className="p-3">Ulang Tahun</th>
                   </tr>
                 </thead>
@@ -273,6 +273,7 @@ export default function RemajaPage() {
                         </td>
                         <td className="p-3 text-gray-600">{item.alamat}</td>
                         <td className="p-3 text-gray-600">{item.asal_sekolah}</td>
+                        <td className="p-3 text-gray-600">{item.no_telp || '-'}</td>
                         <td className="p-3 text-gray-600">
                           <span className="inline-flex items-center gap-1 tanggal-pill whitespace-nowrap">
                             <span className="text-[10px]">🎂</span>
@@ -283,7 +284,7 @@ export default function RemajaPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="p-4 text-center text-gray-500 italic">
+                      <td colSpan={5} className="p-4 text-center text-gray-500 italic">
                         {remajaList.length > 0
                           ? `Tidak ada remaja yang cocok dengan pencarian "${searchTerm}".`
                           : 'Belum ada data remaja yang terdaftar.'}
@@ -295,7 +296,6 @@ export default function RemajaPage() {
             </div>
           </div>
         )}
-
       </div>
 
       <style jsx global>{`

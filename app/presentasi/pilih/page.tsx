@@ -1,11 +1,28 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface SlideOption {
   id: number
   label: string
 }
+
+// Daftar Pilihan Tema Visual
+type ThemeMode = 'royal' | 'celestial' | 'earthy' | 'minimalist'
+
+interface ThemeConfig {
+  id: ThemeMode
+  name: string
+  bg: string
+  accent: string
+}
+
+const THEMES: ThemeConfig[] = [
+  { id: 'royal', name: 'Royal Velvet (Default)', bg: 'radial-gradient(circle at 50% 0%, #2B1B63 0%, #1B1140 55%, #140A2E 100%)', accent: '#F4D35E' },
+  { id: 'celestial', name: 'Celestial Starlight', bg: 'radial-gradient(circle at 50% 0%, #0F172A 0%, #090D16 55%, #030712 100%)', accent: '#E2E8F0' },
+  { id: 'earthy', name: 'Earthy Warmth', bg: 'radial-gradient(circle at 50% 0%, #2D1810 0%, #1E100A 55%, #120905 100%)', accent: '#D97706' },
+  { id: 'minimalist', name: 'Minimalist Midnight', bg: '#09090B', accent: '#FFFFFF' },
+]
 
 const SLIDE_OPTIONS: SlideOption[] = [
   { id: 0, label: 'Tema & Pembicara' },
@@ -32,22 +49,66 @@ const SLIDE_OPTIONS: SlideOption[] = [
 export default function PilihSlidePage() {
   const router = useRouter()
   const [selectedSlides, setSelectedSlides] = useState<number[]>([])
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>('royal')
+  const [saveStatus, setSaveStatus] = useState<string>('')
+
+  // Load data slide dan tema dari localStorage saat halaman dimuat
+  useEffect(() => {
+    try {
+      const savedSlides = localStorage.getItem('selectedSlides')
+      if (savedSlides) {
+        const parsed = JSON.parse(savedSlides)
+        if (Array.isArray(parsed)) setSelectedSlides(parsed)
+      } else {
+        setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
+      }
+
+      const savedTheme = localStorage.getItem('selectedTheme') as ThemeMode
+      if (savedTheme && THEMES.some(t => t.id === savedTheme)) {
+        setCurrentTheme(savedTheme)
+      }
+    } catch (e) {
+      console.error('Gagal memuat data dari localStorage', e)
+    }
+  }, [])
 
   const toggleSlide = (id: number) => {
     setSelectedSlides((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id].sort((a, b) => a - b)
     )
+    setSaveStatus('')
   }
 
-  const selectAll = () => setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
-  const clearAll = () => setSelectedSlides([])
+  const selectAll = () => {
+    setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
+    setSaveStatus('')
+  }
+  
+  const clearAll = () => {
+    setSelectedSlides([])
+    setSaveStatus('')
+  }
+
+  // Fungsi simpan konfigurasi (slide & tema)
+  const handleSaveOnly = () => {
+    try {
+      localStorage.setItem('selectedSlides', JSON.stringify(selectedSlides))
+      localStorage.setItem('selectedTheme', currentTheme)
+      setSaveStatus('Konfigurasi & Tema disimpan!')
+      setTimeout(() => setSaveStatus(''), 3000)
+    } catch (e) {
+      setSaveStatus('Gagal menyimpan!')
+    }
+  }
 
   const handleStart = () => {
     if (selectedSlides.length === 0) return
     localStorage.setItem('selectedSlides', JSON.stringify(selectedSlides))
+    localStorage.setItem('selectedTheme', currentTheme)
     router.push('/presentasi')
   }
 
+  const activeThemeObj = THEMES.find(t => t.id === currentTheme) || THEMES[0]
   const allSelected = selectedSlides.length === SLIDE_OPTIONS.length
   const progressPct = useMemo(
     () => Math.round((selectedSlides.length / SLIDE_OPTIONS.length) * 100),
@@ -56,20 +117,18 @@ export default function PilihSlidePage() {
 
   return (
     <div
-      className="min-h-screen pb-32"
-      style={{
-        background: 'radial-gradient(circle at 50% 0%, #2B1B63 0%, #1B1140 55%, #140A2E 100%)',
-      }}
+      className="min-h-screen pb-32 transition-colors duration-500"
+      style={{ background: activeThemeObj.bg }}
     >
-      {/* Bintang latar */}
-      <div className="pointer-events-none fixed inset-0 opacity-70">
-        <span className="star" style={{ top: '10%', left: '8%', animationDelay: '0s' }} />
-        <span className="star" style={{ top: '25%', left: '85%', animationDelay: '.5s' }} />
-        <span className="star" style={{ top: '55%', left: '18%', animationDelay: '1s' }} />
-        <span className="star" style={{ top: '70%', left: '92%', animationDelay: '.3s' }} />
-        <span className="star" style={{ top: '85%', left: '40%', animationDelay: '1.4s' }} />
-        <span className="star" style={{ top: '15%', left: '55%', animationDelay: '.8s' }} />
-      </div>
+      {/* Bintang latar (hanya tampil jika tema royal/celestial) */}
+      {(currentTheme === 'royal' || currentTheme === 'celestial') && (
+        <div className="pointer-events-none fixed inset-0 opacity-70">
+          <span className="star" style={{ top: '10%', left: '8%', animationDelay: '0s' }} />
+          <span className="star" style={{ top: '25%', left: '85%', animationDelay: '.5s' }} />
+          <span className="star" style={{ top: '55%', left: '18%', animationDelay: '1s' }} />
+          <span className="star" style={{ top: '70%', left: '92%', animationDelay: '.3s' }} />
+        </div>
+      )}
 
       <main className="relative max-w-5xl mx-auto px-5 md:px-8 pt-10 md:pt-14 space-y-7">
 
@@ -85,20 +144,46 @@ export default function PilihSlidePage() {
                   backgroundImage: 'linear-gradient(90deg, #FCE38A, #F4D35E, #E0A93A)',
                 }}
               >
-                Pilih Slide Liturgi
+                Pilih Slide &amp; Tema Liturgi
               </h1>
               <p className="text-amber-100/60 text-sm">
-                Tentukan slide mana saja yang akan tampil saat ibadah berlangsung.
+                Tentukan slide dan atur tema tampilan visual untuk ibadah.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-right">
-              <span className="badge-gold text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap">
-                {selectedSlides.length} / {SLIDE_OPTIONS.length} Slide
-              </span>
-            </div>
+            <span className="badge-gold text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap">
+              {selectedSlides.length} / {SLIDE_OPTIONS.length} Slide
+            </span>
+          </div>
+        </div>
+
+        {/* 🎨 Bagian Pilihan Tema Tampilan */}
+        <div className="reveal delay-1 card-glass-dark p-5 rounded-2xl space-y-3">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/80">
+            🎨 Pilih Tema Tampilan Presentasi
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {THEMES.map((t) => {
+              const isSelectedTheme = currentTheme === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setCurrentTheme(t.id)
+                    setSaveStatus('')
+                  }}
+                  className={`p-3 rounded-xl text-left border transition text-xs font-semibold flex flex-col gap-1 ${
+                    isSelectedTheme
+                      ? 'bg-amber-400/20 border-amber-400 text-amber-100 shadow-md ring-1 ring-amber-400/50'
+                      : 'bg-white/5 border-amber-400/15 text-amber-200/70 hover:bg-white/10'
+                  }`}
+                >
+                  <span className="truncate">{t.name}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -112,13 +197,28 @@ export default function PilihSlidePage() {
             </div>
             <span className="text-xs text-amber-200/70 font-semibold w-10 text-right">{progressPct}%</span>
           </div>
-          <div className="flex gap-2">
-            <button onClick={selectAll} className="btn-ghost text-xs font-semibold px-3.5 py-2 rounded-lg">
-              ✓ Pilih Semua
-            </button>
-            <button onClick={clearAll} className="btn-ghost text-xs font-semibold px-3.5 py-2 rounded-lg">
-              ✕ Hapus Semua
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex gap-2">
+              <button onClick={selectAll} className="btn-ghost text-xs font-semibold px-3.5 py-2 rounded-lg">
+                ✓ Pilih Semua
+              </button>
+              <button onClick={clearAll} className="btn-ghost text-xs font-semibold px-3.5 py-2 rounded-lg">
+                ✕ Hapus Semua
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              {saveStatus && (
+                <span className="text-xs text-emerald-300 font-medium animate-pulse">
+                  {saveStatus}
+                </span>
+              )}
+              <button 
+                onClick={handleSaveOnly} 
+                className="btn-ghost text-xs font-semibold px-4 py-2 rounded-lg border-amber-400/40 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+              >
+                💾 Simpan Konfigurasi
+              </button>
+            </div>
           </div>
         </div>
 
@@ -164,7 +264,7 @@ export default function PilihSlidePage() {
           <div className="hidden sm:block text-xs text-amber-100/60">
             {selectedSlides.length === 0
               ? 'Belum ada slide dipilih'
-              : `${selectedSlides.length} slide siap ditampilkan${allSelected ? ' (semua slide)' : ''}`}
+              : `${selectedSlides.length} slide siap ditampilkan (${activeThemeObj.name})`}
           </div>
           <button
             onClick={handleStart}

@@ -11,19 +11,61 @@ interface JadwalTemaItem {
 
 const AUTOPLAY_MS = 5000
 
+type ThemeMode = 'royal' | 'celestial' | 'earthy' | 'minimalist'
+
+interface ThemeConfig {
+  id: ThemeMode
+  name: string
+  bg: string
+  accent: string
+  cardBg: string
+  cardBorder: string
+}
+
+const THEMES: ThemeConfig[] = [
+  { 
+    id: 'royal', 
+    name: 'Royal Velvet', 
+    bg: 'radial-gradient(circle at 50% 0%, #2B1B63 0%, #1B1140 55%, #140A2E 100%)', 
+    accent: '#F4D35E',
+    cardBg: 'linear-gradient(165deg, rgba(46,27,100,0.65), rgba(26,15,64,0.78))',
+    cardBorder: 'rgba(244,211,94,0.3)'
+  },
+  { 
+    id: 'celestial', 
+    name: 'Celestial Starlight', 
+    bg: 'radial-gradient(circle at 50% 0%, #0F172A 0%, #090D16 55%, #030712 100%)', 
+    accent: '#F4D35E',
+    cardBg: 'linear-gradient(165deg, rgba(15,23,42,0.75), rgba(9,13,22,0.85))',
+    cardBorder: 'rgba(244,211,94,0.25)'
+  },
+  { 
+    id: 'earthy', 
+    name: 'Earthy Warmth', 
+    bg: 'radial-gradient(circle at 50% 0%, #2D1810 0%, #1E100A 55%, #120905 100%)', 
+    accent: '#F4D35E',
+    cardBg: 'linear-gradient(165deg, rgba(50,28,18,0.7), rgba(30,16,10,0.82))',
+    cardBorder: 'rgba(244,211,94,0.3)'
+  },
+  { 
+    id: 'minimalist', 
+    name: 'Minimalist Midnight', 
+    bg: '#09090B', 
+    accent: '#F4D35E',
+    cardBg: 'linear-gradient(165deg, rgba(24,24,27,0.75), rgba(9,9,11,0.9))',
+    cardBorder: 'rgba(244,211,94,0.25)'
+  },
+]
+
 interface LyricLayout {
   columns: string[]
   sizeClass: string
 }
 
-// Ditambahkan parameter `isFullscreen` agar ukuran font lirik bisa diperbesar
-// secara otomatis saat sedang dalam mode presentasi (fullscreen).
 function getLyricLayout(content: string, isFullscreen: boolean): LyricLayout {
   const lines = content.split('\n')
   const nonEmptyCount = lines.filter((l) => l.trim() !== '').length
 
-  // Ukuran font diperbesar agar lebih mudah dibaca.
-  // Saat fullscreen (mode presentasi), semua tingkatan ukuran dinaikkan lagi.
   const sizeClass = isFullscreen
     ? nonEmptyCount <= 8
       ? 'text-4xl md:text-6xl leading-relaxed'
@@ -36,7 +78,6 @@ function getLyricLayout(content: string, isFullscreen: boolean): LyricLayout {
     ? 'text-xl md:text-2xl leading-relaxed'
     : 'text-lg md:text-xl leading-snug'
 
-  // Selalu kembalikan 1 kolom saja
   return {
     columns: [content],
     sizeClass,
@@ -51,14 +92,14 @@ function CornerOrnament({ className = '' }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M2 2H24" stroke="url(#ornGold)" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M2 2V24" stroke="url(#ornGold)" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M2 2C16 2 22 8 22 22" stroke="url(#ornGold)" strokeWidth="1" strokeLinecap="round" opacity="0.65" />
-      <circle cx="2" cy="2" r="2.5" fill="#F4D35E" />
+      <path d="M2 2H24" stroke="url(#ornGold)" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M2 2V24" stroke="url(#ornGold)" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M2 2C16 2 22 8 22 22" stroke="url(#ornGold)" strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+      <circle cx="2" cy="2" r="3" fill="#F4D35E" />
       <defs>
         <linearGradient id="ornGold" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#FCE9B0" />
-          <stop offset="1" stopColor="#B8862F" />
+          <stop offset="0" stopColor="#FFECA1" />
+          <stop offset="1" stopColor="#C89A3C" />
         </linearGradient>
       </defs>
     </svg>
@@ -77,6 +118,7 @@ export default function PresentasiPage() {
   const [rosterNextWeek, setRosterNextWeek] = useState<any | null>(null)
   const [nextSaturdayFormatted, setNextSaturdayFormatted] = useState<string>('')
   const [slides, setSlides] = useState<any[]>([])
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>('royal')
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef<number | null>(null)
@@ -89,6 +131,12 @@ export default function PresentasiPage() {
       router.push('/')
       return
     }
+
+    const savedTheme = localStorage.getItem('selectedTheme') as ThemeMode
+    if (savedTheme && THEMES.some(t => t.id === savedTheme)) {
+      setCurrentTheme(savedTheme)
+    }
+
     const savedSelection = localStorage.getItem('selectedSlides')
     if (!savedSelection) {
       router.push('/presentasi/pilih')
@@ -97,7 +145,6 @@ export default function PresentasiPage() {
     fetchData(JSON.parse(savedSelection))
   }, [router])
 
-  // Listener untuk posisi pergerakan mouse
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY })
@@ -326,35 +373,24 @@ export default function PresentasiPage() {
     return () => clearInterval(interval)
   }, [isPlaying, slides.length])
 
+  const activeThemeObj = THEMES.find(t => t.id === currentTheme) || THEMES[0]
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0D0824] text-amber-200 relative overflow-hidden">
+      <div 
+        className="min-h-screen flex items-center justify-center text-amber-200 relative overflow-hidden transition-colors duration-500"
+        style={{ background: activeThemeObj.bg }}
+      >
         <div className="pointer-events-none absolute inset-0 opacity-70">
           <span className="star" style={{ top: '20%', left: '15%' }} />
           <span className="star" style={{ top: '60%', left: '30%', animationDelay: '.6s' }} />
           <span className="star" style={{ top: '35%', left: '70%', animationDelay: '1.1s' }} />
           <span className="star" style={{ top: '75%', left: '85%', animationDelay: '.3s' }} />
         </div>
-        <div className="text-center space-y-4 relative">
+        <div className="text-center space-y-4 relative z-10">
           <div className="w-10 h-10 border-[3px] border-amber-300/30 border-t-amber-300 rounded-full animate-spin mx-auto" />
-          <p className="text-[11px] tracking-[0.3em] uppercase text-amber-200/80 font-medium">Memuat presentasi&hellip;</p>
+          <p className="text-[11px] tracking-[0.3em] uppercase text-amber-200/80 font-medium ui-sans">Memuat presentasi&hellip;</p>
         </div>
-        <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700;800&display=swap');
-          @keyframes twinkle {
-            0%, 100% { opacity: .15; transform: scale(.8); }
-            50% { opacity: 1; transform: scale(1.3); }
-          }
-          .star {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            border-radius: 9999px;
-            background: #F4D35E;
-            box-shadow: 0 0 6px 1px #F4D35E;
-            animation: twinkle 2.6s ease-in-out infinite;
-          }
-        `}</style>
       </div>
     )
   }
@@ -367,11 +403,13 @@ export default function PresentasiPage() {
       ref={containerRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`min-h-[calc(100vh-70px)] flex flex-col justify-between p-6 md:p-12 text-amber-50 relative overflow-y-auto stage-bg ${
+      className={`min-h-[calc(100vh-70px)] flex flex-col justify-between p-6 md:p-12 text-amber-50 relative overflow-y-auto transition-colors duration-500 ${
         isFullscreen ? 'cursor-none' : ''
       }`}
+      style={{ background: activeThemeObj.bg }}
     >
-      {/* Elemen Kustom Kursor Titik Emas (Hanya tampil saat Fullscreen) */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px] opacity-15 pointer-events-none bg-amber-400 animate-pulse" style={{ animationDuration: '6s' }} />
+
       {isFullscreen && (
         <div
           className="cursor-follower is-active"
@@ -391,28 +429,24 @@ export default function PresentasiPage() {
 
       <div className="grain-overlay" />
 
-      <div className="absolute inset-0 pointer-events-none opacity-60">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#7A2048]/20 rounded-full blur-3xl orb orb-a" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl orb orb-b" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-[#3B2172]/25 rounded-full blur-3xl orb orb-c" />
-      </div>
-      <div className="vignette pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 opacity-60">
+      <div className="pointer-events-none absolute inset-0 opacity-70 overflow-hidden">
         <span className="star" style={{ top: '12%', left: '10%', animationDelay: '0s' }} />
         <span className="star" style={{ top: '22%', left: '88%', animationDelay: '.6s' }} />
         <span className="star" style={{ top: '80%', left: '18%', animationDelay: '1.1s' }} />
         <span className="star" style={{ top: '68%', left: '92%', animationDelay: '.3s' }} />
         <span className="star" style={{ top: '90%', left: '55%', animationDelay: '.9s' }} />
         <span className="star" style={{ top: '8%', left: '48%', animationDelay: '1.4s' }} />
+        <span className="star" style={{ top: '45%', left: '5%', animationDelay: '2s' }} />
+        <span className="star" style={{ top: '35%', left: '95%', animationDelay: '1.8s' }} />
       </div>
 
       {!isFullscreen && (
         <div className="max-w-5xl w-full mx-auto flex justify-between items-center relative z-10 border-b border-amber-200/15 pb-4 header-bar">
           <div className="flex items-center gap-3">
-            <div className="brand-mark hidden sm:flex" aria-hidden="true">✦</div>
+            <div className="brand-mark hidden sm:flex animate-spin-slow" aria-hidden="true">✦</div>
             <div>
               <span className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70 font-semibold ui-sans">
-                Mode Presentasi Admin
+                Mode Presentasi Admin ({activeThemeObj.name})
               </span>
               <h1 className="text-lg md:text-xl font-semibold gold-foil-text tracking-tight" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                 Remaja GKC
@@ -423,15 +457,15 @@ export default function PresentasiPage() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => router.push('/presentasi/pilih')}
-              className="btn-interactive ui-sans text-[11px] font-semibold px-3.5 py-1.5 rounded-full border border-amber-200/25 bg-white/[0.04] text-amber-200/90 hover:bg-white/[0.08] hover:border-amber-200/40 transition tracking-wide"
-              title="Ubah Pilihan Slide"
+              className="btn-interactive ui-sans text-[11px] font-semibold px-3.5 py-1.5 rounded-full border border-amber-200/25 bg-white/[0.04] text-amber-200/90 hover:bg-white/[0.08] hover:border-amber-200/40 transition tracking-wide shadow-sm"
+              title="Ubah Pilihan Slide & Tema"
             >
               ⚙ Pilih Ulang
             </button>
 
             <button
               onClick={toggleFullscreen}
-              className="btn-interactive btn-gold-outline ui-sans text-[11px] font-semibold px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 tracking-wide"
+              className="btn-interactive btn-gold-outline ui-sans text-[11px] font-semibold px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 tracking-wide shadow-sm"
               title="Tampilkan Fullscreen (Layar Penuh)"
             >
               {isFullscreen ? '⤫ Keluar Fullscreen' : '⛶ Fullscreen'}
@@ -448,7 +482,7 @@ export default function PresentasiPage() {
               {isPlaying ? '⏸ Jeda' : '▶ Putar'}
             </button>
 
-            <div className="text-[11px] ui-sans font-medium bg-white/[0.04] border border-amber-200/20 px-3 py-1.5 rounded-full text-amber-200/90 hidden sm:block tabular-nums tracking-wide">
+            <div className="text-[11px] ui-sans font-medium bg-white/[0.04] border border-amber-200/20 px-3 py-1.5 rounded-full text-amber-200/90 hidden sm:block tabular-nums tracking-wide shadow-sm">
               {currentSlide + 1} <span className="text-amber-200/40">/</span> {slides.length}
             </div>
           </div>
@@ -467,35 +501,39 @@ export default function PresentasiPage() {
           <div className="space-y-2.5">
             {slide.subtitle && (
               <span
-                className={`text-amber-300/85 font-semibold tracking-[0.32em] block uppercase fade-item ui-sans ${
-                  isFullscreen ? 'text-sm md:text-lg' : 'text-[11px] md:text-xs'
-                }`}
-                style={{ animationDelay: '.05s' }}
+                className={`text-amber-200 font-semibold tracking-[0.32em] block uppercase fade-item ui-sans drop-shadow`}
+                style={{ animationDelay: '.05s', fontSize: isFullscreen ? '1rem' : '0.75rem' }}
               >
                 {slide.subtitle}
               </span>
             )}
             <h2
-              className={`font-semibold gold-foil-text tracking-tight leading-[1.15] fade-item px-2 ${
-                isFullscreen ? 'text-5xl md:text-7xl lg:text-8xl' : 'text-3xl md:text-5xl'
-              }`}
-              style={{ fontFamily: "'Cormorant Garamond', serif", animationDelay: '.12s' }}
+              className={`font-semibold gold-foil-text tracking-tight leading-[1.15] fade-item px-2`}
+              style={{ 
+                fontFamily: "'Cormorant Garamond', serif", 
+                animationDelay: '.12s',
+                fontSize: isFullscreen ? 'clamp(2.75rem, 5.5vw, 5rem)' : 'clamp(1.85rem, 3.5vw, 3rem)'
+              }}
             >
               {slide.title}
             </h2>
             <div className="flex items-center justify-center gap-3 fade-item" style={{ animationDelay: '.16s' }}>
               <span className="divider-line" />
-              <span className="divider-gem" aria-hidden="true" />
+              <span className="divider-gem animate-pulse" aria-hidden="true" />
               <span className="divider-line" />
             </div>
           </div>
 
           {slide.content && lyricLayoutForSlide && (
             <div
-              className={`relative mx-auto p-7 md:p-9 fade-item gilded-card ${
+              className={`relative mx-auto p-7 md:p-10 fade-item gilded-card transition-all duration-300 hover:scale-[1.005] ${
                 isFullscreen ? 'max-w-5xl' : 'max-w-3xl'
               }`}
-              style={{ animationDelay: '.22s' }}
+              style={{ 
+                animationDelay: '.22s',
+                background: activeThemeObj.cardBg,
+                borderColor: activeThemeObj.cardBorder
+              }}
             >
               <CornerOrnament className="corner-tl" />
               <CornerOrnament className="corner-tr" />
@@ -505,7 +543,7 @@ export default function PresentasiPage() {
                 {lyricLayoutForSlide.columns.map((col, i) => (
                   <p
                     key={i}
-                    className={`text-amber-50/95 whitespace-pre-line text-center ${lyricLayoutForSlide.sizeClass}`}
+                    className={`text-amber-50/95 whitespace-pre-line text-center drop-shadow-sm ${lyricLayoutForSlide.sizeClass}`}
                     style={{ fontFamily: "'Cormorant Garamond', serif" }}
                   >
                     {col}
@@ -525,13 +563,13 @@ export default function PresentasiPage() {
             className={`btn-interactive ui-sans px-4 py-2 text-xs font-semibold rounded-full border transition tracking-wide ${
               currentSlide === 0
                 ? 'opacity-35 cursor-not-allowed border-white/10 bg-transparent text-gray-400'
-                : 'border-amber-200/30 bg-white/[0.04] text-amber-100 hover:bg-white/[0.08] hover:border-amber-200/50'
+                : 'border-amber-200/30 bg-white/[0.04] text-amber-100 hover:bg-white/[0.08] hover:border-amber-200/50 shadow-sm'
             }`}
           >
             &larr; Sebelumnya
           </button>
 
-          <div className="flex gap-1.5 overflow-x-auto max-w-md py-1">
+          <div className="flex gap-1.5 overflow-x-auto max-w-md py-1 px-2">
             {slides.map((_, index) => (
               <button
                 key={index}
@@ -547,7 +585,7 @@ export default function PresentasiPage() {
           <button
             onClick={() => { goNext(); setIsPlaying(false) }}
             disabled={currentSlide === slides.length - 1}
-            className={`btn-interactive ui-sans px-5 py-2 text-xs font-semibold rounded-full transition tracking-wide ${
+            className={`btn-interactive ui-sans px-5 py-2 text-xs font-semibold rounded-full transition tracking-wide shadow-md ${
               currentSlide === slides.length - 1
                 ? 'opacity-35 cursor-not-allowed border border-white/10 bg-transparent text-gray-400'
                 : 'text-[#241246] btn-gold-solid'
@@ -563,19 +601,9 @@ export default function PresentasiPage() {
       </div>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
         .ui-sans { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; }
-
-        .stage-bg {
-          background:
-            radial-gradient(120% 90% at 50% -10%, #241350 0%, transparent 55%),
-            linear-gradient(180deg, #150B33 0%, #0F0824 60%, #0B061C 100%);
-        }
-
-        .vignette {
-          background: radial-gradient(120% 100% at 50% 50%, transparent 45%, rgba(6,3,18,0.55) 100%);
-        }
 
         .grain-overlay {
           position: absolute;
@@ -588,58 +616,71 @@ export default function PresentasiPage() {
         }
 
         .brand-mark {
-          width: 30px;
-          height: 30px;
+          width: 32px;
+          height: 32px;
+          display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 9999px;
-          border: 1px solid rgba(244,211,94,0.35);
+          border: 1px solid rgba(244,211,94,0.4);
           color: #F4D35E;
           font-size: 13px;
-          background: radial-gradient(circle at 30% 30%, rgba(244,211,94,0.18), transparent 70%);
+          background: radial-gradient(circle at 30% 30%, rgba(244,211,94,0.22), transparent 70%);
+          box-shadow: 0 0 10px rgba(244,211,94,0.2);
+        }
+
+        @keyframes spinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spinSlow 12s linear infinite;
         }
 
         .gold-foil-text {
-          background: linear-gradient(180deg, #FCE9B0 0%, #F0CB6E 42%, #C89A3C 68%, #F4D35E 100%);
+          background: linear-gradient(180deg, #FFECA1 0%, #F3D273 40%, #D49E36 75%, #A87023 100%);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
-          filter: drop-shadow(0 1px 12px rgba(244,211,94,0.18));
+          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
         }
 
         .divider-line {
-          width: 34px;
+          width: 40px;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(244,211,94,0.55));
+          background: linear-gradient(90deg, transparent, rgba(244,211,94,0.65));
         }
         .divider-line:last-child {
-          background: linear-gradient(90deg, rgba(244,211,94,0.55), transparent);
+          background: linear-gradient(90deg, rgba(244,211,94,0.65), transparent);
         }
         .divider-gem {
           width: 6px;
           height: 6px;
           background: #F4D35E;
           transform: rotate(45deg);
-          box-shadow: 0 0 8px rgba(244,211,94,0.7);
+          box-shadow: 0 0 10px rgba(244,211,94,0.9);
           flex-shrink: 0;
         }
 
         .gilded-card {
-          background: linear-gradient(165deg, rgba(46,27,100,0.6), rgba(26,15,64,0.72));
-          border: 1px solid rgba(244,211,94,0.22);
-          border-radius: 1.25rem;
+          border-radius: 1.5rem;
+          border-style: solid;
+          border-width: 1px;
           box-shadow:
-            0 24px 60px -20px rgba(0,0,0,0.65),
-            inset 0 1px 0 rgba(255,255,255,0.05),
-            0 0 0 1px rgba(244,211,94,0.04);
-          backdrop-filter: blur(14px);
+            0 30px 70px -20px rgba(0,0,0,0.7),
+            inset 0 1px 0 rgba(255,255,255,0.08),
+            0 0 25px rgba(244,211,94,0.06);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
         }
 
         .ornament-corner {
           position: absolute;
-          width: 26px;
-          height: 26px;
-          opacity: 0.85;
+          width: 28px;
+          height: 28px;
+          opacity: 0.9;
+          pointer-events: none;
         }
         .corner-tl { top: -1px; left: -1px; }
         .corner-tr { top: -1px; right: -1px; transform: scaleX(-1); }
@@ -648,25 +689,27 @@ export default function PresentasiPage() {
 
         .btn-gold-outline {
           color: #F6DE9C;
-          background: linear-gradient(180deg, rgba(244,211,94,0.14), rgba(244,211,94,0.05));
-          border: 1px solid rgba(244,211,94,0.4);
+          background: linear-gradient(180deg, rgba(244,211,94,0.16), rgba(244,211,94,0.05));
+          border: 1px solid rgba(244,211,94,0.45);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .btn-gold-outline:hover {
-          background: linear-gradient(180deg, rgba(244,211,94,0.22), rgba(244,211,94,0.08));
-          border-color: rgba(244,211,94,0.6);
+          background: linear-gradient(180deg, rgba(244,211,94,0.25), rgba(244,211,94,0.1));
+          border-color: rgba(244,211,94,0.7);
         }
 
         .btn-gold-solid {
-          background: linear-gradient(180deg, #FCE38A 0%, #F4D35E 45%, #D4A93A 100%);
-          box-shadow: 0 8px 22px -6px rgba(212,169,58,0.55);
+          background: linear-gradient(180deg, #FFF0A8 0%, #FCE38A 30%, #F4D35E 60%, #D4A93A 100%);
+          box-shadow: 0 8px 25px -6px rgba(212,169,58,0.65);
         }
         .btn-gold-solid:hover {
-          filter: brightness(1.06);
+          filter: brightness(1.08);
+          box-shadow: 0 10px 30px -5px rgba(244,211,94,0.75);
         }
 
         @keyframes twinkle {
-          0%, 100% { opacity: .15; transform: scale(.8); }
-          50% { opacity: 1; transform: scale(1.3); }
+          0%, 100% { opacity: .15; transform: scale(.7); }
+          50% { opacity: 1; transform: scale(1.4); filter: drop-shadow(0 0 8px #F4D35E); }
         }
         .star {
           position: absolute;
@@ -674,70 +717,54 @@ export default function PresentasiPage() {
           height: 3px;
           border-radius: 9999px;
           background: #F4D35E;
-          box-shadow: 0 0 6px 1px #F4D35E;
-          animation: twinkle 2.6s ease-in-out infinite;
+          box-shadow: 0 0 8px 2px #F4D35E;
+          animation: twinkle 3s ease-in-out infinite;
         }
-
-        @keyframes orbFloatA {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, -20px) scale(1.08); }
-        }
-        @keyframes orbFloatB {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-25px, 25px) scale(1.1); }
-        }
-        @keyframes orbFloatC {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); }
-          50% { transform: translate(-50%, -50%) scale(1.12) rotate(8deg); }
-        }
-        .orb-a { animation: orbFloatA 9s ease-in-out infinite; }
-        .orb-b { animation: orbFloatB 11s ease-in-out infinite; }
-        .orb-c { animation: orbFloatC 14s ease-in-out infinite; }
 
         @keyframes barShrink {
           from { width: 0%; }
           to { width: 100%; }
         }
         .autoplay-bar {
-          background: linear-gradient(90deg, #F4D35E, #FFF3C4);
-          box-shadow: 0 0 8px rgba(244,211,94,.6);
+          background: linear-gradient(90deg, #F4D35E, #FFF6D6);
+          box-shadow: 0 0 12px rgba(244,211,94,0.8);
           animation-name: barShrink;
           animation-timing-function: linear;
           animation-fill-mode: forwards;
         }
 
         @keyframes slideInFromRight {
-          0% { opacity: 0; transform: translateX(40px); }
-          100% { opacity: 1; transform: translateX(0); }
+          0% { opacity: 0; transform: translateY(15px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes slideInFromLeft {
-          0% { opacity: 0; transform: translateX(-40px); }
-          100% { opacity: 1; transform: translateX(0); }
+          0% { opacity: 0; transform: translateY(-15px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .slide-in-next { animation: slideInFromRight .45s cubic-bezier(.2,.8,.2,1) both; }
-        .slide-in-prev { animation: slideInFromLeft .45s cubic-bezier(.2,.8,.2,1) both; }
+        .slide-in-next { animation: slideInFromRight .45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .slide-in-prev { animation: slideInFromLeft .45s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
         @keyframes fadeItemIn {
-          0% { opacity: 0; transform: translateY(8px); }
+          0% { opacity: 0; transform: translateY(12px); }
           100% { opacity: 1; transform: translateY(0); }
         }
         .fade-item {
-          animation: fadeItemIn .5s ease both;
+          animation: fadeItemIn .5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         .btn-interactive {
-          transition: transform .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
+          transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), background .2s ease, box-shadow .2s ease, border-color .2s ease;
         }
         .btn-interactive:hover {
-          transform: translateY(-1px);
+          transform: translateY(-2px);
         }
         .btn-interactive:active {
           transform: translateY(0) scale(.96);
         }
 
         @keyframes playingPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(244,211,94,.4); }
-          50% { box-shadow: 0 0 0 5px rgba(244,211,94,0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(244,211,94,0.5); }
+          50% { box-shadow: 0 0 0 8px rgba(244,211,94,0); }
         }
         .playing-pulse {
           animation: playingPulse 1.6s ease-in-out infinite;
@@ -747,61 +774,62 @@ export default function PresentasiPage() {
           transition: width .3s ease, background .2s ease, transform .15s ease;
         }
         .dot-indicator:hover {
-          transform: scaleY(1.3);
+          transform: scaleY(1.4);
         }
         .dot-active {
-          box-shadow: 0 0 8px rgba(244,211,94,.7);
+          box-shadow: 0 0 10px rgba(244,211,94,0.8);
         }
 
         .keyboard-hint {
           position: fixed;
-          bottom: 18px;
+          bottom: 20px;
           left: 50%;
           transform: translate(-50%, 12px);
-          background: rgba(15,8,36,.88);
-          border: 1px solid rgba(244,211,94,.28);
+          background: rgba(18, 10, 38, 0.92);
+          border: 1px solid rgba(244,211,94,0.35);
           color: #FCE9B0;
           font-size: 11px;
           font-weight: 500;
-          letter-spacing: 0.02em;
-          padding: 8px 16px;
+          letter-spacing: 0.03em;
+          padding: 8px 18px;
           border-radius: 9999px;
           opacity: 0;
           pointer-events: none;
           transition: opacity .4s ease, transform .4s ease;
-          backdrop-filter: blur(6px);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           z-index: 40;
           white-space: nowrap;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
         .keyboard-hint-show {
           opacity: 1;
           transform: translate(-50%, 0);
         }
 
-        /* Styling CSS untuk Kustom Kursor Titik Emas */
         .cursor-follower {
           position: fixed;
           top: 0;
           left: 0;
-          width: 12px;
-          height: 12px;
+          width: 14px;
+          height: 14px;
           background: #F4D35E;
           border-radius: 50%;
           pointer-events: none;
           z-index: 9999;
-          box-shadow: 0 0 15px 3px rgba(244, 211, 94, 0.6);
+          box-shadow: 0 0 20px 4px rgba(244, 211, 94, 0.7);
           opacity: 0;
           transition: opacity 0.3s ease;
           transform: translate(-50%, -50%);
         }
 
         .cursor-follower.is-active {
-          opacity: 1;
+          opacity: 0.9;
         }
 
         .lyric-scroll {
-          mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
-          -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
           scrollbar-width: thin;
           scrollbar-color: rgba(244,211,94,.5) transparent;
         }
@@ -812,15 +840,15 @@ export default function PresentasiPage() {
           background: transparent;
         }
         .lyric-scroll::-webkit-scrollbar-thumb {
-          background: rgba(244,211,94,.45);
+          background: rgba(244,211,94,.5);
           border-radius: 9999px;
         }
         .lyric-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(244,211,94,.7);
+          background: rgba(244,211,94,.75);
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .star, .orb-a, .orb-b, .orb-c, .autoplay-bar, .slide-in-next, .slide-in-prev,
+          .star, .animate-spin-slow, .autoplay-bar, .slide-in-next, .slide-in-prev,
           .fade-item, .btn-interactive, .playing-pulse, .dot-indicator, .keyboard-hint {
             animation: none !important;
           }
