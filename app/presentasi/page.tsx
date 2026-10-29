@@ -9,11 +9,11 @@ const THEMES = {
   royal:      { name: 'Royal Velvet',        bg: 'radial-gradient(circle at 50% 0%, #2B1B63, #1B1140 55%, #140A2E)', card: 'linear-gradient(165deg, rgba(46,27,100,.65), rgba(26,15,64,.78))' },
   celestial:  { name: 'Celestial Starlight', bg: 'radial-gradient(circle at 50% 0%, #0F172A, #090D16 55%, #030712)', card: 'linear-gradient(165deg, rgba(15,23,42,.75), rgba(9,13,22,.85))' },
   earthy:     { name: 'Earthy Warmth',       bg: 'radial-gradient(circle at 50% 0%, #2D1810, #1E100A 55%, #120905)', card: 'linear-gradient(165deg, rgba(50,28,18,.7), rgba(30,16,10,.82))' },
-  minimalist: { name: 'Minimalist Midnight', bg: '#09090B',                                                     card: 'linear-gradient(165deg, rgba(24,24,27,.75), rgba(9,9,11,.9))' },
+  minimalist: { name: 'Minimalist Midnight', bg: '#09090B',                                                   card: 'linear-gradient(165deg, rgba(24,24,27,.75), rgba(9,9,11,.9))' },
 } as const
 type ThemeMode = keyof typeof THEMES
 
-interface Slide { title: string; subtitle: string; content: string }
+interface Slide { title: string; subtitle: string; content: string; isVideo?: boolean }
 
 const ROSTER_FIELDS: [string, string][] = [
   ['Liturgos', 'liturgos'], ['Usher & Kolektan', 'usher_kolektan'], ['Doa Syafaat', 'doa_syafaat'],
@@ -27,6 +27,38 @@ const isoDate = (d: Date) => d.toLocaleDateString('en-CA')
 
 const lyricSize = (_content: string, full: boolean) => {
   return full ? 'text-4xl md:text-6xl' : 'text-2xl md:text-4xl'
+}
+
+// Helper untuk mengubah link YouTube biasa/shorts menjadi embed URL
+function getYouTubeEmbedUrl(url: string): string {
+  if (!url) return ''
+  if (url.includes('embed')) return url
+  
+  let videoId = ''
+  if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0]
+  } else if (url.includes('watch?v=')) {
+    videoId = url.split('watch?v=')[1]?.split('&')[0]
+  } else if (url.includes('shorts/')) {
+    videoId = url.split('shorts/')[1]?.split('?')[0]
+  }
+
+  return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url
+}
+
+// Helper untuk mengubah link Dailymotion menjadi embed URL
+function getDailymotionEmbedUrl(url: string): string {
+  if (!url) return ''
+  if (url.includes('embed')) return url
+  
+  let videoId = ''
+  if (url.includes('dai.ly/')) {
+    videoId = url.split('dai.ly/')[1]?.split('?')[0]
+  } else if (url.includes('dailymotion.com/video/')) {
+    videoId = url.split('dailymotion.com/video/')[1]?.split('_')[0]
+  }
+
+  return videoId ? `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1` : url
 }
 
 async function buildSlides(): Promise<Slide[]> {
@@ -51,7 +83,10 @@ async function buildSlides(): Promise<Slide[]> {
     return { kategori: i.kategori?.toLowerCase(), judul: s?.judul_lagu, lirik: s?.lirik }
   })
 
-  const plain = (title: string, subtitle = '', content = ''): Slide => ({ title, subtitle, content })
+  // Mengambil URL video langsung dari localStorage browser agar lebih instan
+  const videoUrl = typeof window !== 'undefined' ? localStorage.getItem('videoUrl') || '' : ''
+
+  const plain = (title: string, subtitle = '', content = '', isVideo = false): Slide => ({ title, subtitle, content, isVideo })
   const song = (label: string, keys: string[]): Slide => {
     const s = songs.find((x) => keys.includes(x.kategori))
     return {
@@ -74,6 +109,7 @@ async function buildSlides(): Promise<Slide[]> {
     plain('Pembacaan Alkitab'),
     song('Lagu Pengantar Firman', ['pengantar_firman']),
     plain('Firman Tuhan'),
+    plain('Pemutaran Video', 'Multimedia', videoUrl, true), // Slide Video
     song('Lagu Pengantar Doa Syafaat', ['pengantar_doa_syafaat']),
     plain('Doa Syafaat'),
     song('Lagu Persembahan', ['persembahan']),
@@ -106,7 +142,6 @@ export default function PresentasiPage() {
   const [showHint, setShowHint] = useState(true)
   const [themeId, setThemeId] = useState<ThemeMode>('royal')
   
-  // PERBAIKAN DI SINI: Set isHovered ke true agar langsung muncul sejak awal
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
   const [isHovered, setIsHovered] = useState(true)
 
@@ -207,7 +242,7 @@ export default function PresentasiPage() {
     )
   }
 
-  const slide = slides[current] || { title: '', subtitle: '', content: '' }
+  const slide = slides[current] || { title: '', subtitle: '', content: '', isVideo: false }
   const pill = 'ui-sans text-[11px] font-semibold px-3.5 py-1.5 rounded-full border transition tracking-wide'
 
   return (
@@ -223,7 +258,6 @@ export default function PresentasiPage() {
     >
       <Stars />
 
-      {/* Custom Bintang Pengganti Kursor Mouse */}
       {isHovered && mousePos.x > 0 && (
         <div
           className="pointer-events-none fixed z-50 custom-cursor-star"
@@ -233,14 +267,12 @@ export default function PresentasiPage() {
         </div>
       )}
 
-      {/* Progress autoplay */}
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/5 z-20">
         {isPlaying && (
           <div key={`${current}-${isPlaying}`} className="h-full autoplay-bar" style={{ animationDuration: `${AUTOPLAY_MS}ms` }} />
         )}
       </div>
 
-      {/* Header */}
       {!isFullscreen && (
         <div className="max-w-5xl w-full mx-auto flex justify-between items-center relative z-10 border-b border-amber-200/15 pb-4">
           <div>
@@ -269,7 +301,6 @@ export default function PresentasiPage() {
         </div>
       )}
 
-      {/* Slide */}
       <div className={`w-full mx-auto my-auto relative z-10 text-center ${isFullscreen ? 'max-w-6xl flex items-center justify-center h-full' : 'max-w-4xl py-6'}`}>
         <div key={current} className={`w-full space-y-4 ${direction === 'next' ? 'slide-in-next' : 'slide-in-prev'}`}>
           <div
@@ -290,21 +321,59 @@ export default function PresentasiPage() {
               </h2>
             </div>
 
-            {slide.content && (
-              <div className="max-h-[44vh] md:max-h-[50vh] overflow-y-auto no-scrollbar pr-1">
-                <p
-                  className={`serif whitespace-pre-line text-center leading-relaxed text-amber-50/95 ${lyricSize(slide.content, isFullscreen)}`}
-                  style={{ fontSize: isFullscreen ? 'clamp(2.75rem, 5vw, 4.25rem)' : 'clamp(1.75rem, 3vw, 2.75rem)' }}
-                >
-                  {slide.content}
-                </p>
+            {slide.isVideo ? (
+              <div className="w-full aspect-video rounded-xl overflow-hidden bg-black/50 border border-amber-200/20 flex items-center justify-center">
+                {slide.content ? (
+                  slide.content.includes('youtube.com') || slide.content.includes('youtu.be') ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(slide.content)}
+                      title="Video YouTube"
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : slide.content.includes('dai.ly') || slide.content.includes('dailymotion.com') ? (
+                    <iframe
+                      src={getDailymotionEmbedUrl(slide.content)}
+                      title="Video Dailymotion"
+                      className="w-full h-full border-0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : slide.content.includes('onedrive.live.com/embed') ? (
+                    <iframe
+                      src={slide.content}
+                      title="Video OneDrive"
+                      className="w-full h-full border-0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video controls autoPlay className="w-full h-full object-contain">
+                      <source src={slide.content} />
+                      Browser Anda tidak mendukung pemutaran video.
+                    </video>
+                  )
+                ) : (
+                  <p className="text-amber-200/60 italic text-sm ui-sans">Tautan video belum diatur untuk ibadah ini.</p>
+                )}
               </div>
+            ) : (
+              slide.content && (
+                <div className="max-h-[44vh] md:max-h-[50vh] overflow-y-auto no-scrollbar pr-1">
+                  <p
+                    className={`serif whitespace-pre-line text-center leading-relaxed text-amber-50/95 ${lyricSize(slide.content, isFullscreen)}`}
+                    style={{ fontSize: isFullscreen ? 'clamp(2.75rem, 5vw, 4.25rem)' : 'clamp(1.75rem, 3vw, 2.75rem)' }}
+                  >
+                    {slide.content}
+                  </p>
+                </div>
+              )
             )}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       {!isFullscreen && (
         <div className="max-w-5xl w-full mx-auto flex flex-col-reverse sm:flex-row justify-between items-center gap-4 relative z-10 border-t border-amber-200/15 pt-4">
           <button

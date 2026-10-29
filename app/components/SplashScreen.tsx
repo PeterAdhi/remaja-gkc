@@ -6,10 +6,21 @@ const SUBTITLE = 'bertumbuh dalam terang kasih-Nya'
 const HOLD_MS = 2200   // durasi tampil sebelum mulai keluar
 const EXIT_MS = 700    // durasi animasi keluar
 
+interface Ember {
+  id: number
+  left: number
+  delay: number
+  duration: number
+  size: number
+  drift: number
+}
+
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const [isFading, setIsFading] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const timer = setTimeout(() => {
       setIsFading(true)
       const removeTimer = setTimeout(onFinish, EXIT_MS)
@@ -18,19 +29,18 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     return () => clearTimeout(timer)
   }, [onFinish])
 
-  // Partikel cahaya (embers) dengan posisi & timing acak, dibuat sekali saja
-  const embers = useMemo(
-    () =>
-      Array.from({ length: 12 }).map((_, i) => ({
-        id: i,
-        left: 10 + Math.random() * 80,
-        delay: Math.random() * 2.2,
-        duration: 2.6 + Math.random() * 1.8,
-        size: 2 + Math.random() * 2.5,
-        drift: (Math.random() - 0.5) * 40,
-      })),
-    []
-  )
+  // Partikel cahaya (embers) di-generate hanya setelah komponen terpasang di client
+  const embers = useMemo<Ember[]>(() => {
+    if (!mounted) return []
+    return Array.from({ length: 12 }).map((_, i) => ({
+      id: i,
+      left: 10 + Math.random() * 80,
+      delay: Math.random() * 2.2,
+      duration: 2.6 + Math.random() * 1.8,
+      size: 2 + Math.random() * 2.5,
+      drift: (Math.random() - 0.5) * 40,
+    }))
+  }, [mounted])
 
   const letters = useMemo(() => TITLE.split(''), [])
 
@@ -58,9 +68,9 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         <span className="star" style={{ top: '10%', left: '60%', animationDelay: '1.7s' }} />
       </div>
 
-      {/* Partikel cahaya naik (embers) */}
+      {/* Partikel cahaya naik (embers) - Render setelah mounted untuk hindari SSR mismatch */}
       <div className="pointer-events-none absolute inset-0">
-        {embers.map((e) => (
+        {mounted && embers.map((e) => (
           <span
             key={e.id}
             className="ember"
