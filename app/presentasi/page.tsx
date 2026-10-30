@@ -46,19 +46,31 @@ function getYouTubeEmbedUrl(url: string): string {
   return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url
 }
 
-// Helper untuk mengubah link Dailymotion menjadi embed URL
-function getDailymotionEmbedUrl(url: string): string {
+// Helper untuk mengubah link Google Drive menjadi preview/embed URL
+function getGoogleDriveEmbedUrl(url: string): string {
   if (!url) return ''
-  if (url.includes('embed')) return url
-  
-  let videoId = ''
-  if (url.includes('dai.ly/')) {
-    videoId = url.split('dai.ly/')[1]?.split('?')[0]
-  } else if (url.includes('dailymotion.com/video/')) {
-    videoId = url.split('dailymotion.com/video/')[1]?.split('_')[0]
+  if (url.includes('/preview')) return url
+
+  let fileId = ''
+  if (url.includes('/file/d/')) {
+    fileId = url.split('/file/d/')[1]?.split('/')[0]
+  } else if (url.includes('id=')) {
+    fileId = url.split('id=')[1]?.split('&')[0]
   }
 
-  return videoId ? `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1` : url
+  return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url
+}
+
+function getMegaEmbedUrl(url: string): string {
+  if (!url) return ''
+  if (url.includes('/embed/')) return url
+
+  // Mengubah https://mega.nz/file/ID#KEY menjadi https://mega.nz/embed/ID#KEY
+  if (url.includes('mega.nz/file/')) {
+    return url.replace('mega.nz/file/', 'mega.nz/embed/')
+  }
+
+  return url
 }
 
 async function buildSlides(): Promise<Slide[]> {
@@ -83,7 +95,6 @@ async function buildSlides(): Promise<Slide[]> {
     return { kategori: i.kategori?.toLowerCase(), judul: s?.judul_lagu, lirik: s?.lirik }
   })
 
-  // Mengambil URL video langsung dari localStorage browser agar lebih instan
   const videoUrl = typeof window !== 'undefined' ? localStorage.getItem('videoUrl') || '' : ''
 
   const plain = (title: string, subtitle = '', content = '', isVideo = false): Slide => ({ title, subtitle, content, isVideo })
@@ -332,20 +343,12 @@ export default function PresentasiPage() {
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
-                  ) : slide.content.includes('dai.ly') || slide.content.includes('dailymotion.com') ? (
+                  ) : slide.content.includes('drive.google.com') ? (
                     <iframe
-                      src={getDailymotionEmbedUrl(slide.content)}
-                      title="Video Dailymotion"
+                      src={getGoogleDriveEmbedUrl(slide.content)}
+                      title="Video Google Drive"
                       className="w-full h-full border-0"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : slide.content.includes('onedrive.live.com/embed') ? (
-                    <iframe
-                      src={slide.content}
-                      title="Video OneDrive"
-                      className="w-full h-full border-0"
-                      allow="autoplay; fullscreen; picture-in-picture"
+                      allow="autoplay"
                       allowFullScreen
                     />
                   ) : (

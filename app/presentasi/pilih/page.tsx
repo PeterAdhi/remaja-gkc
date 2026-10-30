@@ -61,53 +61,43 @@ export default function PilihSlidePage() {
   const [targetSaturdayDate, setTargetSaturdayDate] = useState<string>('')
 
   useEffect(() => {
-    try {
-      const savedSlides = localStorage.getItem('selectedSlides')
-      if (savedSlides) {
-        const parsed = JSON.parse(savedSlides)
-        if (Array.isArray(parsed)) setSelectedSlides(parsed)
-      } else {
-        setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
-      }
+    const today = new Date()
+    const day = today.getDay()
+    const diff = (6 - day + 7) % 7
+    const nextSaturday = new Date(today)
+    nextSaturday.setDate(today.getDate() + diff)
+    const dateStr = nextSaturday.toISOString().split('T')[0]
+    setTargetSaturdayDate(dateStr)
 
-      const savedTheme = localStorage.getItem('selectedTheme') as ThemeMode
-      if (savedTheme && THEMES.some(t => t.id === savedTheme)) {
-        setCurrentTheme(savedTheme)
-      }
-
-      // Ambil link video tersimpan di browser
-      const savedVideoUrl = localStorage.getItem('videoUrl')
-      if (savedVideoUrl) {
-        setVideoUrlInput(savedVideoUrl)
-      }
-    } catch (e) {
-      console.error('Gagal memuat data dari localStorage', e)
-    }
-
-    fetchVideoConfig()
+    fetchConfiguration(dateStr)
   }, [])
 
-  async function fetchVideoConfig() {
+  // Fungsi untuk mengambil data konfigurasi dari database Supabase
+  async function fetchConfiguration(dateStr: string) {
     try {
-      const today = new Date()
-      const day = today.getDay()
-      const diff = (6 - day + 7) % 7
-      const nextSaturday = new Date(today)
-      nextSaturday.setDate(today.getDate() + diff)
-      const dateStr = nextSaturday.toISOString().split('T')[0]
-      setTargetSaturdayDate(dateStr)
-
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('pemilihan_lagu')
-        .select('video_url')
+        .select('video_url, selected_slides, selected_theme')
         .eq('tanggal_ibadah', dateStr)
         .maybeSingle()
 
-      if (data && data.video_url && !localStorage.getItem('videoUrl')) {
-        setVideoUrlInput(data.video_url)
+      if (data) {
+        if (data.video_url) setVideoUrlInput(data.video_url)
+        if (data.selected_slides && Array.isArray(data.selected_slides)) {
+          setSelectedSlides(data.selected_slides)
+        } else {
+          setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
+        }
+        if (data.selected_theme && THEMES.some(t => t.id === data.selected_theme)) {
+          setCurrentTheme(data.selected_theme as ThemeMode)
+        }
+      } else {
+        // Default jika baris tanggal belum ada di database
+        setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
       }
     } catch (err) {
-      console.error('Gagal mengambil konfigurasi video dari Supabase:', err)
+      console.error('Gagal mengambil konfigurasi:', err)
+      setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
     }
   }
 
@@ -128,23 +118,54 @@ export default function PilihSlidePage() {
     setSaveStatus('')
   }
 
+  // Menyimpan perubahan ke Database Supabase & LocalStorage secara bersamaan
   const handleSaveOnly = async () => {
     try {
+      // Simpan juga ke localStorage sebagai cache instan perangkat lokal
       localStorage.setItem('selectedSlides', JSON.stringify(selectedSlides))
       localStorage.setItem('selectedTheme', currentTheme)
       localStorage.setItem('videoUrl', videoUrlInput)
 
       if (targetSaturdayDate) {
-        await supabase
+        // Cek apakah data untuk tanggal sabtu ini sudah ada di tabel pemilihan_lagu
+        const { data: existing } = await supabase
           .from('pemilihan_lagu')
-          .update({ video_url: videoUrlInput })
+          .select('id')
           .eq('tanggal_ibadah', targetSaturdayDate)
+          .maybeSingle()
+
+        if (existing) {
+          // Update data yang sudah ada
+          const { error } = await supabase
+            .from('pemilihan_lagu')
+            .update({
+              video_url: videoUrlInput,
+              selected_slides: selectedSlides,
+              selected_theme: currentTheme,
+            })
+            .eq('tanggal_ibadah', targetSaturdayDate)
+
+          if (error) throw error
+        } else {
+          // Buat baris baru jika belum ada
+          const { error } = await supabase
+            .from('pemilihan_lagu')
+            .insert({
+              tanggal_ibadah: targetSaturdayDate,
+              video_url: videoUrlInput,
+              selected_slides: selectedSlides,
+              selected_theme: currentTheme,
+            })
+
+          if (error) throw error
+        }
       }
 
-      setSaveStatus('Konfigurasi, Tema & Link Video disimpan!')
-      setTimeout(() => setSaveStatus(''), 3000)
-    } catch (e) {
-      setSaveStatus('Gagal menyimpan!')
+      setSaveStatus('Berhasil disimpan & disinkronkan ke semua device!')
+      setTimeout(() => setSaveStatus(''), 3500)
+    } catch (e: any) {
+      console.error(e)
+      setSaveStatus('Gagal menyimpan ke server!')
     }
   }
 
@@ -173,7 +194,7 @@ export default function PilihSlidePage() {
               <h1 className="text-2xl font-bold bg-clip-text text-transparent" style={{ fontFamily: "'Cormorant Garamond', serif", backgroundImage: 'linear-gradient(90deg, #FCE38A, #F4D35E, #E0A93A)' }}>
                 Pilih Slide &amp; Tema Liturgi
               </h1>
-              <p className="text-amber-100/60 text-sm">Tentukan slide, tema, dan tautan YouTube video ibadah.</p>
+              <p className="text-amber-100/60 text-sm">Perubahan akan langsung tersinkron ke semua perangkat penampil.</p>
             </div>
           </div>
           <span className="badge-gold text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap">
@@ -197,27 +218,26 @@ export default function PilihSlidePage() {
           </div>
         </div>
 
-        {/* Bagian Input Link YouTube */}
+        {/* Bagian Input Link Video (YouTube / Google Drive) */}
         <div className="reveal delay-1 card-glass-dark p-5 rounded-2xl space-y-3">
           <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/80">
-            🎥 Link Video YouTube (Unlisted / Publik)
+            🎥 Link Video (YouTube / Google Drive)
           </label>
           
           <div className="relative">
             <input
               type="url"
-              placeholder="Masukkan tautan YouTube (contoh: https://www.youtube.com/watch?v=...)"
+              placeholder="Masukkan link YouTube atau Google Drive..."
               value={videoUrlInput}
               onChange={(e) => {
                 setVideoUrlInput(e.target.value)
-                localStorage.setItem('videoUrl', e.target.value)
               }}
               className="w-full p-3.5 rounded-xl text-xs bg-black/40 border border-amber-400/20 text-amber-100 placeholder-amber-100/30 focus:outline-none focus:border-amber-400 transition"
             />
           </div>
 
           <p className="text-[11px] text-amber-200/50">
-            💡 Masukkan tautan video YouTube Unlisted/Publik. Video akan diputar otomatis pada slide Pemutaran Video.
+            💡 Masukkan tautan YouTube atau Google Drive (Pastikan akses file Drive diset &quot;Anyone with the link can view&quot;).
           </p>
 
           {videoUrlInput && (
@@ -275,7 +295,7 @@ export default function PilihSlidePage() {
 
       <div className="fixed bottom-0 left-0 right-0 z-30 action-bar">
         <div className="max-w-5xl mx-auto px-5 md:px-8 py-4 flex items-center gap-4">
-          <div className="hidden sm:block text-xs text-amber-100/60">{selectedSlides.length === 0 ? 'Belum ada slide dipilih' : `${selectedSlides.length} slide siap ditampilkan`}</div>
+          <div className="hidden sm:block text-[11px] text-amber-100/60">{selectedSlides.length === 0 ? 'Belum ada slide dipilih' : `${selectedSlides.length} slide siap ditampilkan`}</div>
           <button onClick={handleStart} disabled={selectedSlides.length === 0} className="btn-gold flex-1 sm:flex-none sm:ml-auto py-3 px-8 rounded-xl text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed">
             Simpan &amp; Mulai Presentasi →
           </button>
