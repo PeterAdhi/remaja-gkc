@@ -29,7 +29,6 @@ const lyricSize = (_content: string, full: boolean) => {
   return full ? 'text-4xl md:text-6xl' : 'text-2xl md:text-4xl'
 }
 
-// Helper untuk mengubah link YouTube biasa/shorts menjadi embed URL
 function getYouTubeEmbedUrl(url: string): string {
   if (!url) return ''
   if (url.includes('embed')) return url
@@ -46,7 +45,6 @@ function getYouTubeEmbedUrl(url: string): string {
   return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url
 }
 
-// Helper untuk mengubah link Google Drive menjadi preview/embed URL
 function getGoogleDriveEmbedUrl(url: string): string {
   if (!url) return ''
   if (url.includes('/preview')) return url
@@ -59,18 +57,6 @@ function getGoogleDriveEmbedUrl(url: string): string {
   }
 
   return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url
-}
-
-function getMegaEmbedUrl(url: string): string {
-  if (!url) return ''
-  if (url.includes('/embed/')) return url
-
-  // Mengubah https://mega.nz/file/ID#KEY menjadi https://mega.nz/embed/ID#KEY
-  if (url.includes('mega.nz/file/')) {
-    return url.replace('mega.nz/file/', 'mega.nz/embed/')
-  }
-
-  return url
 }
 
 async function buildSlides(): Promise<Slide[]> {
@@ -112,7 +98,7 @@ async function buildSlides(): Promise<Slide[]> {
     : 'Roster penatalayanan belum diatur untuk tanggal ini.'
 
   return [
-    plain(judul, 'Persekutuan RGKC', `Pembicara: ${pembicara}`),
+    plain(judul, 'Persekutuan RGKC', `Pembicara: ${pembicara}`), // Index 0 (Slide Tema)
     plain('Saat Teduh'),
     song('Lagu Pembuka', ['pembuka', 'pembukaan']),
     plain('Doa Pembuka'),
@@ -120,7 +106,7 @@ async function buildSlides(): Promise<Slide[]> {
     plain('Pembacaan Alkitab'),
     song('Lagu Pengantar Firman', ['pengantar_firman']),
     plain('Firman Tuhan'),
-    plain('Pemutaran Video', 'Multimedia', videoUrl, true), // Slide Video
+    plain('Pemutaran Video', 'Multimedia', videoUrl, true),
     song('Lagu Pengantar Doa Syafaat', ['pengantar_doa_syafaat']),
     plain('Doa Syafaat'),
     song('Lagu Persembahan', ['persembahan']),
@@ -153,6 +139,9 @@ export default function PresentasiPage() {
   const [showHint, setShowHint] = useState(true)
   const [themeId, setThemeId] = useState<ThemeMode>('royal')
   
+  // State untuk menyimpan posisi slide sebelum tombol tema diklik
+  const [returnIndex, setReturnIndex] = useState<number | null>(null)
+
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
   const [isHovered, setIsHovered] = useState(true)
 
@@ -179,12 +168,32 @@ export default function PresentasiPage() {
 
   const move = useCallback((delta: number) => {
     setDirection(delta > 0 ? 'next' : 'prev')
+    
+    // Jika berada di slide Tema (0) dan menekan Next (delta > 0) serta ada memori slide sebelumnya
+    if (current === 0 && delta > 0 && returnIndex !== null) {
+      const nextTarget = Math.min(returnIndex + 1, slides.length - 1)
+      setReturnIndex(null) // Reset memori
+      setCurrent(nextTarget)
+      return
+    }
+
     setCurrent((p) => Math.min(Math.max(p + delta, 0), Math.max(slides.length - 1, 0)))
-  }, [slides.length])
+  }, [current, returnIndex, slides.length])
 
   const goTo = (i: number) => {
     setDirection(i > current ? 'next' : 'prev')
     setCurrent(i)
+    setIsPlaying(false)
+    if (i !== 0) setReturnIndex(null)
+  }
+
+  // Fungsi khusus tombol shortcut "Tema & Pembicara"
+  const jumpToTheme = () => {
+    if (current !== 0) {
+      setReturnIndex(current) // Simpan posisi slide terakhir sebelum pindah ke 0
+    }
+    setDirection('prev')
+    setCurrent(0)
     setIsPlaying(false)
   }
 
@@ -284,8 +293,21 @@ export default function PresentasiPage() {
         )}
       </div>
 
+      {/* Tombol Akses Cepat Tema & Pembicara (Muncul di luar maupun saat mode Fullscreen ketika kursor bergerak) */}
+      {(isHovered || !isFullscreen) && (
+        <div className={`absolute top-4 left-4 z-40 transition-opacity duration-300 ${isFullscreen && !isHovered ? 'opacity-0' : 'opacity-100'}`}>
+          <button
+            onClick={jumpToTheme}
+            className={`${pill} border-amber-300/40 bg-amber-400/20 text-amber-100 hover:bg-amber-400/30 shadow-lg`}
+            title="Tampilkan slide tema & pembicara"
+          >
+            📌
+          </button>
+        </div>
+      )}
+
       {!isFullscreen && (
-        <div className="max-w-5xl w-full mx-auto flex justify-between items-center relative z-10 border-b border-amber-200/15 pb-4">
+        <div className="max-w-5xl w-full mx-auto flex justify-between items-center relative z-10 border-b border-amber-200/15 pb-4 mt-6">
           <div>
             <span className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70 font-semibold ui-sans">
               Mode Presentasi Admin ({theme.name})

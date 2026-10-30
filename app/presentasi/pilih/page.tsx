@@ -59,6 +59,9 @@ export default function PilihSlidePage() {
   
   const [videoUrlInput, setVideoUrlInput] = useState<string>('')
   const [targetSaturdayDate, setTargetSaturdayDate] = useState<string>('')
+  
+  // State untuk mengontrol status kunci input link video (Default: Terkunci/Locked)
+  const [isVideoLocked, setIsVideoLocked] = useState<boolean>(true)
 
   useEffect(() => {
     const today = new Date()
@@ -72,10 +75,9 @@ export default function PilihSlidePage() {
     fetchConfiguration(dateStr)
   }, [])
 
-  // Fungsi untuk mengambil data konfigurasi dari database Supabase
   async function fetchConfiguration(dateStr: string) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('pemilihan_lagu')
         .select('video_url, selected_slides, selected_theme')
         .eq('tanggal_ibadah', dateStr)
@@ -92,7 +94,6 @@ export default function PilihSlidePage() {
           setCurrentTheme(data.selected_theme as ThemeMode)
         }
       } else {
-        // Default jika baris tanggal belum ada di database
         setSelectedSlides(SLIDE_OPTIONS.map((s) => s.id))
       }
     } catch (err) {
@@ -118,16 +119,13 @@ export default function PilihSlidePage() {
     setSaveStatus('')
   }
 
-  // Menyimpan perubahan ke Database Supabase & LocalStorage secara bersamaan
   const handleSaveOnly = async () => {
     try {
-      // Simpan juga ke localStorage sebagai cache instan perangkat lokal
       localStorage.setItem('selectedSlides', JSON.stringify(selectedSlides))
       localStorage.setItem('selectedTheme', currentTheme)
       localStorage.setItem('videoUrl', videoUrlInput)
 
       if (targetSaturdayDate) {
-        // Cek apakah data untuk tanggal sabtu ini sudah ada di tabel pemilihan_lagu
         const { data: existing } = await supabase
           .from('pemilihan_lagu')
           .select('id')
@@ -135,7 +133,6 @@ export default function PilihSlidePage() {
           .maybeSingle()
 
         if (existing) {
-          // Update data yang sudah ada
           const { error } = await supabase
             .from('pemilihan_lagu')
             .update({
@@ -147,7 +144,6 @@ export default function PilihSlidePage() {
 
           if (error) throw error
         } else {
-          // Buat baris baru jika belum ada
           const { error } = await supabase
             .from('pemilihan_lagu')
             .insert({
@@ -218,31 +214,41 @@ export default function PilihSlidePage() {
           </div>
         </div>
 
-        {/* Bagian Input Link Video (YouTube / Google Drive) */}
+        {/* Bagian Input Link Video dengan Tombol Kunci */}
         <div className="reveal delay-1 card-glass-dark p-5 rounded-2xl space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/80">
-            🎥 Link Video (YouTube / Google Drive)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-amber-200/80">
+              🎥 Link Video (YouTube / Google Drive)
+            </label>
+            <button
+              onClick={() => setIsVideoLocked(!isVideoLocked)}
+              className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition font-semibold ${isVideoLocked ? 'bg-amber-500/10 border-amber-400/30 text-amber-300 hover:bg-amber-500/20' : 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/30'}`}
+              title={isVideoLocked ? "Klik untuk membuka kunci" : "Klik untuk mengunci kembali"}
+            >
+              {isVideoLocked ? '🔒 Terkunci (Buka)' : '🔓 Terbuka (Kunci)'}
+            </button>
+          </div>
           
           <div className="relative">
             <input
               type="url"
-              placeholder="Masukkan link YouTube atau Google Drive..."
+              disabled={isVideoLocked}
+              placeholder={isVideoLocked ? "Input link terkunci. Klik tombol gembok di atas untuk mengedit." : "Masukkan link YouTube atau Google Drive..."}
               value={videoUrlInput}
-              onChange={(e) => {
-                setVideoUrlInput(e.target.value)
-              }}
-              className="w-full p-3.5 rounded-xl text-xs bg-black/40 border border-amber-400/20 text-amber-100 placeholder-amber-100/30 focus:outline-none focus:border-amber-400 transition"
+              onChange={(e) => setVideoUrlInput(e.target.value)}
+              className={`w-full p-3.5 rounded-xl text-xs border transition ${isVideoLocked ? 'bg-black/20 border-white/10 text-amber-100/50 cursor-not-allowed select-none' : 'bg-black/40 border-amber-400/40 text-amber-100 placeholder-amber-100/35 focus:outline-none focus:border-amber-400'}`}
             />
           </div>
 
           <p className="text-[11px] text-amber-200/50">
-            💡 Masukkan tautan YouTube atau Google Drive (Pastikan akses file Drive diset &quot;Anyone with the link can view&quot;).
+            {isVideoLocked 
+              ? '🔒 Kotak input terkunci demi keamanan. Klik tombol di kanan atas untuk mengedit.' 
+              : '💡 Masukkan tautan YouTube atau Google Drive.'}
           </p>
 
           {videoUrlInput && (
             <p className="text-[11px] text-emerald-300 truncate pt-1">
-              ✔ Link Terpasang: <a href={videoUrlInput} target="_blank" rel="noreferrer" className="underline">{videoUrlInput}</a>
+              ✔ Status: Link video aman tersimpan di sistem
             </p>
           )}
         </div>
